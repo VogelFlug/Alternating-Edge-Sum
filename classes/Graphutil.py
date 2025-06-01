@@ -18,11 +18,7 @@ def getoutervertices(edgelist):
     for i,j in edgelist:
         vertices.add(i)
         vertices.add(j)
-    return vertices
+    return tuple(vertices)
 
-def getinnervertices(edgelist):
-    vertices = set()
-    for i,j in edgelist:
-        vertices.add(i)
-        vertices.add(j)
-    return vertices
+def getinnervertices(vertexnumber, outvertices):
+    return tuple(set(range(1,vertexnumber)).difference(outvertices))
