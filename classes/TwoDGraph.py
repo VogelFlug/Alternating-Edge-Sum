@@ -1,5 +1,5 @@
 import numpy as np
-from . import Graphutil as util
+#from . import Graphutil as util
 
 class TwoDGraph:
     vertices: np.ndarray
@@ -10,9 +10,15 @@ class TwoDGraph:
     neighbourhood: tuple[set[int]]
     edgecounter: np.ndarray
 
-    def __init__(self, data: str):
-        self.get2dgraphfromvgl(data)
-        self.initneighandedgecounter()
+    def __init__(self, *, vgl: str = "nuh uh", vertices = [], faces = []):
+        if(vgl == "nuh uh"):
+            self.vertices = vertices
+            self.faces = faces
+            self.vertexnumber = vertices.shape[1]
+            self.facenumber = len(faces)
+        else:
+            self.get2dgraphfromvgl(vgl)
+            self.initneighandedgecounter()
 
     def get2dgraphfromvgl(self, data: str):
         lines = data.splitlines()
@@ -111,53 +117,3 @@ class TwoDGraph:
 
         self.neighbourhood = tuple(neighbourhood)
         self.edgecounter = edgecounter
-
-
-    def Tutteembedding(self):
-        oe = util.getouteredges(self.edgecounter)
-        ie = util.getinneredges(self.edgecounter)
-
-        ov = util.getoutervertices(oe)
-        ocount = len(ov)
-        iv = util.getinnervertices(self.vertexnumber, ov)
-        icount = len(iv)
-
-        #First get matrix L for inner vertex positions. The diagonal is filled with the degree of the inner vertex it represents, L_{i,j} is -1 if (i,j) is an inneredge
-        Lx = np.zeros((icount, icount))
-        Ly = np.zeros((icount, icount))
-        for i in range(0,icount):
-            nh = self.neighbourhood[iv[i]]
-            nhnr = len(nh)
-            Lx[i,i] = Ly[i,i] = nhnr
-
-            innerneighbours = tuple(nh.intersection(iv))
-            for neighbour in innerneighbours:
-                index = iv.index(neighbour)
-                Lx[i,index] = Ly[i,index] = -1
-                
-
-        #Now for the right side of the equation:        
-        outx = self.vertices[0,ov[:]]
-        outy = self.vertices[1,ov[:]]
-        Bx = By = np.zeros((ocount,icount))
-        for i in range(0, ocount):
-            innerneighbours = tuple(self.neighbourhood[ov[i]].intersection(iv))
-            for neighbour in innerneighbours:
-                index = iv.index(neighbour)
-                Bx[i,index] = By[i,index] = 1
-        
-        Bxvec = np.matmul(Bx, outx)
-        Byvec = np.matmul(By, outy)
-        
-        #solve Tutte linear system of equations
-        innervertices = np.zeros((2, icount))
-        innervertices[0,:] = np.linalg.solve(Lx, Bxvec)
-        innervertices[1,:] = np.linalg.solve(Ly, Byvec)
-
-        #insert new vertex positions into graph
-        print(iv)
-        for counter, i in enumerate(iv):
-            self.vertices[:,i] = innervertices[:,counter]
-
-        return 
-

@@ -1,5 +1,6 @@
 import numpy as np
-#from . import TwoDGraph
+from matplotlib import pyplot as plt
+from . import TwoDGraph
 
 #outer edges only appear once
 def getouteredges(edgecounter):
@@ -22,3 +23,7 @@ def getoutervertices(edgelist):
 
 def getinnervertices(vertexnumber, outvertices):
     return tuple(set(range(1,vertexnumber)).difference(outvertices))
+
+def showGraph(Graph: TwoDGraph):
+    plt.scatter(Graph.vertices[0,:], Graph.vertices[1,:], color = "red")
+    plt.show()
