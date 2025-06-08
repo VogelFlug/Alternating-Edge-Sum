@@ -49,14 +49,14 @@ class TwoDGraph:
                 while(line[chacount] != " "):
                     number = number + line[chacount]
                     if(chacount == len(line)-1):
-                        vertex.append(int(number))
+                        vertex.append(float(number))
                         linened = True
                         break
                     chacount += 1
                 if(linened == True):
                     break
                 chacount += 1
-                vertex.append(int(number))
+                vertex.append(float(number))
             vertices[:,vertexcounter] = vertex
             linecounter += 1
             vertexcounter += 1

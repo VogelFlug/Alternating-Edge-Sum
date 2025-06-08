@@ -8,6 +8,75 @@ from io import StringIO
 from classes.TwoDGraph import TwoDGraph
 import classes.Graphutil as util
 
+
+#energy function as mean of neighbourpositions squared. Applicable to both x and y
+def tutteenergy(innervertices: torch.tensor, allvertices: np.ndarray, innervertexindices, neighbourhood: tuple[set[int]], axis):
+    energy = 0
+    for i,vertex in enumerate(innervertices):
+        nh = tuple(neighbourhood[innervertexindices[i]])
+        neighbourcounter = len(nh)
+        neighbourhoodsum = 0
+        for neighbour in nh:
+            if(neighbour in innervertexindices):
+                neighbourhoodsum += innervertices[innervertexindices.index(neighbour)]
+            else:
+                neighbourhoodsum += allvertices[axis, neighbour]
+        energy += (neighbourhoodsum/neighbourcounter)**2
+
+    return energy
+
+        
+            
+
+#Tutteembedding via Gradient Descent
+def gradienttutte(Graph: TwoDGraph, learnrate: int):
+    vertices = Graph.vertices
+    oe = util.getouteredges(Graph.edgecounter)
+    ie = util.getinneredges(Graph.edgecounter)
+
+    ov = util.getoutervertices(oe)
+    iv = util.getinnervertices(Graph.vertexnumber, ov)
+
+    Xtensor = torch.tensor((vertices[:,iv])[0,:].tolist(), requires_grad=True)
+    Ytensor = torch.tensor((vertices[:,iv])[1,:].tolist(), requires_grad=True)
+
+    for i in range(100):
+        #calc energy
+        xenergy = tutteenergy(Xtensor, vertices, iv, Graph.neighbourhood, 0)
+        yenergy = tutteenergy(Ytensor, vertices, iv, Graph.neighbourhood, 1)
+        
+        #get gradient through backpropagation
+        xenergy.backward()
+        yenergy.backward()
+        print(Xtensor)
+        print(Xtensor.grad)
+        print(Ytensor.grad)
+        with torch.no_grad():
+            Xtensor -= learnrate * Xtensor.grad
+            Ytensor -= learnrate * Ytensor.grad
+
+        print(Xtensor)
+        #Gradienten zurücksetzen
+        Xtensor.grad.zero_()
+        Ytensor.grad.zero_()
+    
+    vertexs = np.zeros((2,Graph.vertexnumber))
+    vertx = Xtensor.detach().numpy()
+    verty = Ytensor.detach().numpy()
+    for i in range(Graph.vertexnumber):
+        if(i in iv):
+            vertexs[0,i] = vertx[iv.index(i)]
+            vertexs[1,i] = verty[iv.index(i)]
+        else:
+            vertexs[:,i] = Graph.vertices[:,i]
+
+    newGraph = TwoDGraph(vertices=vertexs, faces=Graph.faces)
+    return newGraph
+
+
+
+
+#Tutteembedding directly via Laplace Matrix
 def standardtuttembedding(Graph: TwoDGraph):
     oe = util.getouteredges(Graph.edgecounter)
     ie = util.getinneredges(Graph.edgecounter)
@@ -59,26 +128,28 @@ def standardtuttembedding(Graph: TwoDGraph):
 
     return newGraph
 
+
+
+
 def main(autopath: str):
     # Get datafile
     x = autopath
-    print(x)
+    #print(x)
     data = ""
     with open(x , "r") as f:
         data = f.read()
     Graph = TwoDGraph(vgl = data)
-    # print(Graph.vertices)
-    # print(Graph.faces)
-    # print(Graph.neighbourhood)
-    # print(Graph.edgecounter)
-    # oe = util.getouteredges(Graph.edgecounter)
-    # ie = util.getinneredges(Graph.edgecounter)
-    # print(oe)
-    # print(ie)
-    TutteGraph = standardtuttembedding(Graph)
-    util.showGraph(Graph)
-    print(TutteGraph.vertices)
-    util.showGraph(TutteGraph)
+
+
+    # TutteGraph = standardtuttembedding(Graph)
+    # util.showGraph(Graph)
+    # print(Graph.vertices.T)
+    # print("\n\n\n")
+    # print(TutteGraph.vertices.T)
+    # util.showGraph(TutteGraph)
+
+    FakeTuttegraph = gradienttutte(Graph, 0.001)
+    util.showGraph(FakeTuttegraph)
 
 if __name__ == '__main__':
     main(sys.argv[1])

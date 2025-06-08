@@ -26,4 +26,10 @@ def getinnervertices(vertexnumber, outvertices):
 
 def showGraph(Graph: TwoDGraph):
     plt.scatter(Graph.vertices[0,:], Graph.vertices[1,:], color = "red")
+    faces = Graph.faces
+    vertices = Graph.vertices
+    for i,j,k in faces:
+        plt.plot([vertices[0,i],vertices[0,j]],[vertices[1,i],vertices[1,j]])
+        plt.plot([vertices[0,j],vertices[0,k]],[vertices[1,j],vertices[1,k]])
+        plt.plot([vertices[0,i],vertices[0,k]],[vertices[1,i],vertices[1,k]])
     plt.show()
