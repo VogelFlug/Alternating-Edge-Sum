@@ -1,6 +1,7 @@
 #Imports
 import numpy as np
 import torch
+import torchviz
 import sys
 from io import StringIO
 
@@ -10,10 +11,11 @@ import classes.Graphutil as util
 
 
 #energy function as mean of neighbourpositions squared. Applicable to both x and y
-def tutteenergy(innervertices: torch.tensor, allvertices: np.ndarray, innervertexindices, neighbourhood: tuple[set[int]], axis):
+def tutteenergy(innervertices, allvertices: np.ndarray, innervertexindices, neighbourhood: tuple[set[int]], axis):
     energy = 0
     for i,vertex in enumerate(innervertices):
         nh = tuple(neighbourhood[innervertexindices[i]])
+        #print(nh)
         neighbourcounter = len(nh)
         neighbourhoodsum = 0
         for neighbour in nh:
@@ -21,8 +23,10 @@ def tutteenergy(innervertices: torch.tensor, allvertices: np.ndarray, innerverte
                 neighbourhoodsum += innervertices[innervertexindices.index(neighbour)]
             else:
                 neighbourhoodsum += allvertices[axis, neighbour]
-        energy += (neighbourhoodsum/neighbourcounter)**2
+        energy += (vertex-(neighbourhoodsum/neighbourcounter))**2
 
+    #graphy = torchviz.make_dot(energy, params={v: k for v, k in enumerate(list(innervertices))})
+    #graphy.render("scuffedaaahfile", format="png")
     return energy
 
         
@@ -40,7 +44,7 @@ def gradienttutte(Graph: TwoDGraph, learnrate: int):
     Xtensor = torch.tensor((vertices[:,iv])[0,:].tolist(), requires_grad=True)
     Ytensor = torch.tensor((vertices[:,iv])[1,:].tolist(), requires_grad=True)
 
-    for i in range(100):
+    for i in range(10000):
         #calc energy
         xenergy = tutteenergy(Xtensor, vertices, iv, Graph.neighbourhood, 0)
         yenergy = tutteenergy(Ytensor, vertices, iv, Graph.neighbourhood, 1)
@@ -48,14 +52,14 @@ def gradienttutte(Graph: TwoDGraph, learnrate: int):
         #get gradient through backpropagation
         xenergy.backward()
         yenergy.backward()
-        print(Xtensor)
-        print(Xtensor.grad)
-        print(Ytensor.grad)
+        #print(Xtensor)
+        #print(Xtensor.grad)
+        #print(Ytensor.grad)
         with torch.no_grad():
             Xtensor -= learnrate * Xtensor.grad
             Ytensor -= learnrate * Ytensor.grad
 
-        print(Xtensor)
+        #print(Xtensor)
         #Gradienten zurücksetzen
         Xtensor.grad.zero_()
         Ytensor.grad.zero_()
@@ -98,7 +102,8 @@ def standardtuttembedding(Graph: TwoDGraph):
         for neighbour in innerneighbours:
             index = iv.index(neighbour)
             Lx[i,index] = Ly[i,index] = -1
-            
+    
+    print(Lx)
 
     #Now for the right side of the equation:        
     outx = Graph.vertices[0,ov[:]]
@@ -108,11 +113,14 @@ def standardtuttembedding(Graph: TwoDGraph):
         innerneighbours = tuple(Graph.neighbourhood[ov[i]].intersection(iv))
         for neighbour in innerneighbours:
             index = iv.index(neighbour)
-            Bx[i,index] = By[i,index] = 1
+            Bx[index,i] = By[index,i] = 1
     
     Bxvec = np.matmul(Bx, outx)
     Byvec = np.matmul(By, outy)
     
+    #This code didnt work until i put in this print statement?
+    #print(Bxvec)
+
     #solve Tutte linear system of equations
     innervertices = np.zeros((2, icount))
     innervertices[0,:] = np.linalg.solve(Lx, Bxvec)
@@ -139,14 +147,15 @@ def main(autopath: str):
     with open(x , "r") as f:
         data = f.read()
     Graph = TwoDGraph(vgl = data)
+    util.showGraph(Graph)
 
 
-    # TutteGraph = standardtuttembedding(Graph)
-    # util.showGraph(Graph)
-    # print(Graph.vertices.T)
+    #TutteGraph = standardtuttembedding(Graph)
+    #util.showGraph(Graph)
+    #print(Graph.vertices.T)
     # print("\n\n\n")
-    # print(TutteGraph.vertices.T)
-    # util.showGraph(TutteGraph)
+    #print(TutteGraph.vertices.T)
+    #util.showGraph(TutteGraph)
 
     FakeTuttegraph = gradienttutte(Graph, 0.001)
     util.showGraph(FakeTuttegraph)
