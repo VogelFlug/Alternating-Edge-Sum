@@ -33,7 +33,7 @@ def tutteenergy(innervertices, allvertices: np.ndarray, innervertexindices, neig
             
 
 #Tutteembedding via Gradient Descent
-def gradienttutte(Graph: TwoDGraph, learnrate: int):
+def gradienttutte(Graph: TwoDGraph, learnrate: float):
     vertices = Graph.vertices
     oe = util.getouteredges(Graph.edgecounter)
     ie = util.getinneredges(Graph.edgecounter)
@@ -50,19 +50,19 @@ def gradienttutte(Graph: TwoDGraph, learnrate: int):
         yenergy = tutteenergy(Ytensor, vertices, iv, Graph.neighbourhood, 1)
         
         #get gradient through backpropagation
-        xenergy.backward()
-        yenergy.backward()
+        xenergy.backward() # type: ignore
+        yenergy.backward() # type: ignore
         #print(Xtensor)
         #print(Xtensor.grad)
         #print(Ytensor.grad)
         with torch.no_grad():
-            Xtensor -= learnrate * Xtensor.grad
-            Ytensor -= learnrate * Ytensor.grad
+            Xtensor -= learnrate * Xtensor.grad # type: ignore
+            Ytensor -= learnrate * Ytensor.grad # type: ignore
 
         #print(Xtensor)
         #Gradienten zurücksetzen
-        Xtensor.grad.zero_()
-        Ytensor.grad.zero_()
+        Xtensor.grad.zero_() # type: ignore
+        Ytensor.grad.zero_() # type: ignore
     
     vertexs = np.zeros((2,Graph.vertexnumber))
     vertx = Xtensor.detach().numpy()
@@ -77,6 +77,50 @@ def gradienttutte(Graph: TwoDGraph, learnrate: int):
     newGraph = TwoDGraph(vertices=vertexs, faces=Graph.faces)
     return newGraph
 
+
+def gradientAES(Graph: TwoDGraph, learnrate: float):
+    vertices = Graph.vertices
+    oe = util.getouteredges(Graph.edgecounter)
+    ie = util.getinneredges(Graph.edgecounter)
+
+    ov = util.getoutervertices(oe)
+    iv = util.getinnervertices(Graph.vertexnumber, ov)
+
+    Xtensor = torch.tensor((vertices[:,iv])[0,:].tolist(), requires_grad=True)
+    Ytensor = torch.tensor((vertices[:,iv])[1,:].tolist(), requires_grad=True)
+
+    for i in range(10000):
+        #calc energy
+        xenergy = tutteenergy(Xtensor, vertices, iv, Graph.neighbourhood, 0)
+        yenergy = tutteenergy(Ytensor, vertices, iv, Graph.neighbourhood, 1)
+        
+        #get gradient through backpropagation
+        xenergy.backward() # type: ignore
+        yenergy.backward() # type: ignore
+        #print(Xtensor)
+        #print(Xtensor.grad)
+        #print(Ytensor.grad)
+        with torch.no_grad():
+            Xtensor -= learnrate * Xtensor.grad # type: ignore
+            Ytensor -= learnrate * Ytensor.grad # type: ignore
+
+        #print(Xtensor)
+        #Gradienten zurücksetzen
+        Xtensor.grad.zero_() # type: ignore
+        Ytensor.grad.zero_() # type: ignore
+    
+    vertexs = np.zeros((2,Graph.vertexnumber))
+    vertx = Xtensor.detach().numpy()
+    verty = Ytensor.detach().numpy()
+    for i in range(Graph.vertexnumber):
+        if(i in iv):
+            vertexs[0,i] = vertx[iv.index(i)]
+            vertexs[1,i] = verty[iv.index(i)]
+        else:
+            vertexs[:,i] = Graph.vertices[:,i]
+
+    newGraph = TwoDGraph(vertices=vertexs, faces=Graph.faces)
+    return newGraph
 
 
 
@@ -157,8 +201,9 @@ def main(autopath: str):
     #print(TutteGraph.vertices.T)
     #util.showGraph(TutteGraph)
 
-    FakeTuttegraph = gradienttutte(Graph, 0.001)
-    util.showGraph(FakeTuttegraph)
+    #FakeTuttegraph = gradienttutte(Graph, 0.001)
+    #util.showGraph(FakeTuttegraph)
+    print(util.getAESList(Graph, util.getinneredges(Graph.edgecounter)))
 
 if __name__ == '__main__':
     main(sys.argv[1])
