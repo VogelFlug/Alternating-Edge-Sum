@@ -44,3 +44,59 @@ def getAESList(Graph: TwoDGraph, inneredges: set[tuple[int,int]]):
         triangelist[count,3] = neighbours[1]
 
     return triangelist
+
+#Tutteembedding directly via Laplace Matrix
+def standardtuttembedding(Graph: TwoDGraph):
+    oe = getouteredges(Graph.edgecounter)
+    ie = getinneredges(Graph.edgecounter)
+
+    ov = getoutervertices(oe)
+    ocount = len(ov)
+    iv = getinnervertices(Graph.vertexnumber, ov)
+    icount = len(iv)
+
+    #First get matrix L for inner vertex positions. The diagonal is filled with the degree of the inner vertex it represents, L_{i,j} is -1 if (i,j) is an inneredge
+    Lx = np.zeros((icount, icount))
+    Ly = np.zeros((icount, icount))
+    for i in range(0,icount):
+        nh = Graph.neighbourhood[iv[i]]
+        nhnr = len(nh)
+        Lx[i,i] = Ly[i,i] = nhnr
+
+        innerneighbours = tuple(nh.intersection(iv))
+        for neighbour in innerneighbours:
+            index = iv.index(neighbour)
+            Lx[i,index] = Ly[i,index] = -1
+    
+    print(Lx)
+
+    #Now for the right side of the equation:        
+    outx = Graph.vertices[0,ov[:]]
+    outy = Graph.vertices[1,ov[:]]
+    Bx = By = np.zeros((ocount,icount))
+    for i in range(0, ocount):
+        innerneighbours = tuple(Graph.neighbourhood[ov[i]].intersection(iv))
+        for neighbour in innerneighbours:
+            index = iv.index(neighbour)
+            Bx[index,i] = By[index,i] = 1
+    
+    Bxvec = np.matmul(Bx, outx)
+    Byvec = np.matmul(By, outy)
+    
+    #This code didnt work until i put in this print statement?
+    #print(Bxvec)
+
+    #solve Tutte linear system of equations
+    innervertices = np.zeros((2, icount))
+    innervertices[0,:] = np.linalg.solve(Lx, Bxvec)
+    innervertices[1,:] = np.linalg.solve(Ly, Byvec)
+
+    #insert new vertex positions into graph
+    newvertices = Graph.vertices.copy()
+    for counter, i in enumerate(iv):
+        newvertices[:,i] = innervertices[:,counter]
+
+    #create new Graph from vertices
+    newGraph = TwoDGraph(vertices=newvertices, faces = Graph.faces)
+
+    return newGraph

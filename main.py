@@ -29,7 +29,7 @@ def tutteenergy(innervertices, allvertices: np.ndarray, innervertexindices, neig
     #graphy.render("scuffedaaahfile", format="png")
     return energy
 
-        
+
             
 
 #Tutteembedding via Gradient Descent
@@ -41,8 +41,8 @@ def gradienttutte(Graph: TwoDGraph, learnrate: float):
     ov = util.getoutervertices(oe)
     iv = util.getinnervertices(Graph.vertexnumber, ov)
 
-    Xtensor = torch.tensor((vertices[:,iv])[0,:].tolist(), requires_grad=True)
-    Ytensor = torch.tensor((vertices[:,iv])[1,:].tolist(), requires_grad=True)
+    Xtensor = torch.tensor((vertices[0,iv]).tolist(), requires_grad=True)
+    Ytensor = torch.tensor((vertices[1,iv]).tolist(), requires_grad=True)
 
     for i in range(10000):
         #calc energy
@@ -77,6 +77,25 @@ def gradienttutte(Graph: TwoDGraph, learnrate: float):
     newGraph = TwoDGraph(vertices=vertexs, faces=Graph.faces)
     return newGraph
 
+def AESenergy(innervertices, allvertices: np.ndarray, innervertexindices, aeslist: np.ndarray):
+    fullvertex = torch.tensor(allvertices.tolist(), requires_grad=False)
+    #This combines our fixed outside vertices with the changing inner vertices
+    for count, i in enumerate(innervertexindices):
+        fullvertex[:,i] = innervertices[:,count]
+    
+    i = fullvertex[:,aeslist[:,0]]
+    k = fullvertex[:,aeslist[:,1]]
+    j = fullvertex[:,aeslist[:,2]]
+    l = fullvertex[:,aeslist[:,3]]
+    # print(aeslist)
+    # print(i)
+    # print(j)
+    # print(k)
+    # print(l)
+
+    #energy for each inner edge = (|ik| - |kj| + |jl| - |li|) ^ 2
+    energies = (torch.linalg.norm(i-k, dim=0) - torch.linalg.norm(j-k, dim=0) + torch.linalg.norm(l-j, dim=0) - torch.linalg.norm(i-l, dim=0))
+    return torch.sum(energies ** 2)
 
 def gradientAES(Graph: TwoDGraph, learnrate: float):
     vertices = Graph.vertices
@@ -86,101 +105,36 @@ def gradientAES(Graph: TwoDGraph, learnrate: float):
     ov = util.getoutervertices(oe)
     iv = util.getinnervertices(Graph.vertexnumber, ov)
 
-    Xtensor = torch.tensor((vertices[:,iv])[0,:].tolist(), requires_grad=True)
-    Ytensor = torch.tensor((vertices[:,iv])[1,:].tolist(), requires_grad=True)
+    Verttensor = torch.tensor((vertices[:,iv]).tolist(), requires_grad=True)
 
-    for i in range(10000):
+    AESlist = util.getAESList(Graph, ie)
+
+    for i in range(5000):
         #calc energy
-        xenergy = tutteenergy(Xtensor, vertices, iv, Graph.neighbourhood, 0)
-        yenergy = tutteenergy(Ytensor, vertices, iv, Graph.neighbourhood, 1)
+        energy = AESenergy(Verttensor, vertices, iv, AESlist)
+        #print(energy)
         
         #get gradient through backpropagation
-        xenergy.backward() # type: ignore
-        yenergy.backward() # type: ignore
-        #print(Xtensor)
-        #print(Xtensor.grad)
-        #print(Ytensor.grad)
+        energy.backward()
+        
+
         with torch.no_grad():
-            Xtensor -= learnrate * Xtensor.grad # type: ignore
-            Ytensor -= learnrate * Ytensor.grad # type: ignore
+            Verttensor -= learnrate * Verttensor.grad # type: ignore
 
         #print(Xtensor)
         #Gradienten zurücksetzen
-        Xtensor.grad.zero_() # type: ignore
-        Ytensor.grad.zero_() # type: ignore
+        Verttensor.grad.zero_() # type: ignore
     
     vertexs = np.zeros((2,Graph.vertexnumber))
-    vertx = Xtensor.detach().numpy()
-    verty = Ytensor.detach().numpy()
+    gradientfinal = Verttensor.detach().numpy()
     for i in range(Graph.vertexnumber):
         if(i in iv):
-            vertexs[0,i] = vertx[iv.index(i)]
-            vertexs[1,i] = verty[iv.index(i)]
+            vertexs[:,i] = gradientfinal[:,iv.index(i)]
         else:
             vertexs[:,i] = Graph.vertices[:,i]
 
     newGraph = TwoDGraph(vertices=vertexs, faces=Graph.faces)
     return newGraph
-
-
-
-#Tutteembedding directly via Laplace Matrix
-def standardtuttembedding(Graph: TwoDGraph):
-    oe = util.getouteredges(Graph.edgecounter)
-    ie = util.getinneredges(Graph.edgecounter)
-
-    ov = util.getoutervertices(oe)
-    ocount = len(ov)
-    iv = util.getinnervertices(Graph.vertexnumber, ov)
-    icount = len(iv)
-
-    #First get matrix L for inner vertex positions. The diagonal is filled with the degree of the inner vertex it represents, L_{i,j} is -1 if (i,j) is an inneredge
-    Lx = np.zeros((icount, icount))
-    Ly = np.zeros((icount, icount))
-    for i in range(0,icount):
-        nh = Graph.neighbourhood[iv[i]]
-        nhnr = len(nh)
-        Lx[i,i] = Ly[i,i] = nhnr
-
-        innerneighbours = tuple(nh.intersection(iv))
-        for neighbour in innerneighbours:
-            index = iv.index(neighbour)
-            Lx[i,index] = Ly[i,index] = -1
-    
-    print(Lx)
-
-    #Now for the right side of the equation:        
-    outx = Graph.vertices[0,ov[:]]
-    outy = Graph.vertices[1,ov[:]]
-    Bx = By = np.zeros((ocount,icount))
-    for i in range(0, ocount):
-        innerneighbours = tuple(Graph.neighbourhood[ov[i]].intersection(iv))
-        for neighbour in innerneighbours:
-            index = iv.index(neighbour)
-            Bx[index,i] = By[index,i] = 1
-    
-    Bxvec = np.matmul(Bx, outx)
-    Byvec = np.matmul(By, outy)
-    
-    #This code didnt work until i put in this print statement?
-    #print(Bxvec)
-
-    #solve Tutte linear system of equations
-    innervertices = np.zeros((2, icount))
-    innervertices[0,:] = np.linalg.solve(Lx, Bxvec)
-    innervertices[1,:] = np.linalg.solve(Ly, Byvec)
-
-    #insert new vertex positions into graph
-    newvertices = Graph.vertices.copy()
-    for counter, i in enumerate(iv):
-        newvertices[:,i] = innervertices[:,counter]
-
-    #create new Graph from vertices
-    newGraph = TwoDGraph(vertices=newvertices, faces = Graph.faces)
-
-    return newGraph
-
-
 
 
 def main(autopath: str):
@@ -204,6 +158,10 @@ def main(autopath: str):
     #FakeTuttegraph = gradienttutte(Graph, 0.001)
     #util.showGraph(FakeTuttegraph)
     print(util.getAESList(Graph, util.getinneredges(Graph.edgecounter)))
+
+    AESgraph = gradientAES(Graph, 0.001)
+    print(AESgraph.vertices)
+    util.showGraph(AESgraph)
 
 if __name__ == '__main__':
     main(sys.argv[1])
