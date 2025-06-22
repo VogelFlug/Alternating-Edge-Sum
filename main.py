@@ -44,7 +44,7 @@ def gradienttutte(Graph: TwoDGraph, learnrate: float):
     Xtensor = torch.tensor((vertices[0,iv]).tolist(), requires_grad=True)
     Ytensor = torch.tensor((vertices[1,iv]).tolist(), requires_grad=True)
 
-    for i in range(10000):
+    for i in range(2000):
         #calc energy
         xenergy = tutteenergy(Xtensor, vertices, iv, Graph.neighbourhood, 0)
         yenergy = tutteenergy(Ytensor, vertices, iv, Graph.neighbourhood, 1)
@@ -94,7 +94,13 @@ def AESenergy(innervertices, allvertices: np.ndarray, innervertexindices, aeslis
     # print(l)
 
     #energy for each inner edge = (|ik| - |kj| + |jl| - |li|) ^ 2
-    energies = (torch.linalg.norm(i-k, dim=0) - torch.linalg.norm(j-k, dim=0) + torch.linalg.norm(l-j, dim=0) - torch.linalg.norm(i-l, dim=0))
+    energies = (torch.linalg.norm(k-i, dim=0) - torch.linalg.norm(j-k, dim=0) + torch.linalg.norm(l-j, dim=0) - torch.linalg.norm(i-l, dim=0))
+    #print(energies)
+    
+    energy = torch.sum(energies ** 2)
+
+    # graphy = torchviz.make_dot(energy, params={v: k for v, k in enumerate(list(innervertices))})
+    # graphy.render("AEStree", format="png")
     return torch.sum(energies ** 2)
 
 def gradientAES(Graph: TwoDGraph, learnrate: float):
@@ -109,10 +115,10 @@ def gradientAES(Graph: TwoDGraph, learnrate: float):
 
     AESlist = util.getAESList(Graph, ie)
 
-    for i in range(4000):
+    for i in range(2000):
         #calc energy
         energy = AESenergy(Verttensor, vertices, iv, AESlist)
-        print(energy)
+        #print(energy)
         
         #get gradient through backpropagation
         energy.backward()
@@ -148,17 +154,13 @@ def main(autopath: str):
     util.showGraph(Graph)
 
 
-    #TutteGraph = standardtuttembedding(Graph)
-    #util.showGraph(Graph)
-    #print(Graph.vertices.T)
-    # print("\n\n\n")
-    #print(TutteGraph.vertices.T)
-    #util.showGraph(TutteGraph)
+    # TutteGraph = util.standardtuttembedding(Graph)
+    # util.showGraph(TutteGraph)
 
-    #FakeTuttegraph = gradienttutte(Graph, 0.001)
-    #util.showGraph(FakeTuttegraph)
+    # FakeTuttegraph = gradienttutte(Graph, 0.001)
+    # util.showGraph(FakeTuttegraph)
+
     print(util.getAESList(Graph, util.getinneredges(Graph.edgecounter)))
-
     AESgraph = gradientAES(Graph, 0.001)
     print(AESgraph.vertices)
     util.showGraph(AESgraph)

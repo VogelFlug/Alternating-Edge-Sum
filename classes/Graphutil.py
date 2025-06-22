@@ -26,12 +26,20 @@ def getinnervertices(vertexnumber, outvertices):
 
 def showGraph(Graph: TwoDGraph):
     plt.scatter(Graph.vertices[0,:], Graph.vertices[1,:], color = "red")
+    #write index to make sure no swapping around happens
+    for idx in range(Graph.vertices.shape[1]):
+        x, y = Graph.vertices[0, idx], Graph.vertices[1, idx]
+        plt.text(x, y, str(idx), fontsize=9, color="blue")
+
+
     faces : tuple[int,int,int] = Graph.faces 
     vertices = Graph.vertices
     for [i,j,k] in faces:
         plt.plot([vertices[0,i],vertices[0,j]],[vertices[1,i],vertices[1,j]])
         plt.plot([vertices[0,j],vertices[0,k]],[vertices[1,j],vertices[1,k]])
         plt.plot([vertices[0,i],vertices[0,k]],[vertices[1,i],vertices[1,k]])
+
+    plt.axis("equal")
     plt.show()
 
 def getAESList(Graph: TwoDGraph, inneredges: set[tuple[int,int]]):
