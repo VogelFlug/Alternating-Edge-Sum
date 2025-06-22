@@ -109,10 +109,10 @@ def gradientAES(Graph: TwoDGraph, learnrate: float):
 
     AESlist = util.getAESList(Graph, ie)
 
-    for i in range(5000):
+    for i in range(4000):
         #calc energy
         energy = AESenergy(Verttensor, vertices, iv, AESlist)
-        #print(energy)
+        print(energy)
         
         #get gradient through backpropagation
         energy.backward()
