@@ -24,24 +24,26 @@ def getoutervertices(edgelist):
 def getinnervertices(vertexnumber, outvertices):
     return tuple(set(range(1,vertexnumber)).difference(outvertices))
 
-def showGraph(Graph: TwoDGraph):
-    plt.scatter(Graph.vertices[0,:], Graph.vertices[1,:], color = "red")
+#This plots a graph in the provided plot
+def showGraph(Graph: TwoDGraph, plot):
+    realt = plot
+    realt.scatter(Graph.vertices[0,:], Graph.vertices[1,:], color = "red")
     #write index to make sure no swapping around happens
     for idx in range(Graph.vertices.shape[1]):
         x, y = Graph.vertices[0, idx], Graph.vertices[1, idx]
-        plt.text(x, y, str(idx), fontsize=9, color="blue")
+        realt.text(x, y, str(idx), fontsize=9, color="blue")
 
 
     faces : tuple[int,int,int] = Graph.faces 
     vertices = Graph.vertices
-    for [i,j,k] in faces:
-        plt.plot([vertices[0,i],vertices[0,j]],[vertices[1,i],vertices[1,j]])
-        plt.plot([vertices[0,j],vertices[0,k]],[vertices[1,j],vertices[1,k]])
-        plt.plot([vertices[0,i],vertices[0,k]],[vertices[1,i],vertices[1,k]])
+    for [i,j,k] in faces: # type: ignore
+        realt.plot([vertices[0,i],vertices[0,j]],[vertices[1,i],vertices[1,j]])
+        realt.plot([vertices[0,j],vertices[0,k]],[vertices[1,j],vertices[1,k]])
+        realt.plot([vertices[0,i],vertices[0,k]],[vertices[1,i],vertices[1,k]])
 
-    plt.axis("equal")
-    plt.show()
+    realt.axis("equal")
 
+#AESlist is a list where each row corresponds to one inner edge and its adjacent faces with format [i, l, j, k]
 def getAESList(Graph: TwoDGraph, inneredges: set[tuple[int,int]]):
     triangelist = np.zeros((len(inneredges),4))
     for count, [i, j] in enumerate(inneredges):
@@ -108,3 +110,30 @@ def standardtuttembedding(Graph: TwoDGraph):
     newGraph = TwoDGraph(vertices=newvertices, faces = Graph.faces)
 
     return newGraph
+
+#Calculates the AES energy for a given graph, Might be scuffed since implementation is copied from regular AESenergy, TODO: fix
+def SnapshotAES(Graph: TwoDGraph):
+    allvertices = Graph.vertices
+    oe = getouteredges(Graph.edgecounter)
+    ie = getinneredges(Graph.edgecounter)
+    ov = getoutervertices(oe)
+    
+    innervertexindices = getinnervertices(Graph.vertexnumber, ov)
+    aeslist = getAESList(Graph, ie)
+    fullvertex = allvertices.tolist()
+    innervertices = allvertices[:,innervertexindices].tolist()
+    #This combines our fixed outside vertices with the changing inner vertices
+    for count, i in enumerate(innervertexindices):
+        fullvertex[:,i] = innervertices[:,count]
+    
+    i = fullvertex[:,aeslist[:,0]]
+    k = fullvertex[:,aeslist[:,1]]
+    j = fullvertex[:,aeslist[:,2]]
+    l = fullvertex[:,aeslist[:,3]]
+
+    #energy for each inner edge = (|ik| - |kj| + |jl| - |li|) ^ 2
+    energies = (np.linalg.norm(k-i, axis=0) - np.linalg.norm(j-k, axis=0) + np.linalg.norm(l-j, axis=0) - np.linalg.norm(i-l, axis=0))
+    
+    energy = np.sum(energies ** 2)
+
+    return np.sum(energies ** 2)

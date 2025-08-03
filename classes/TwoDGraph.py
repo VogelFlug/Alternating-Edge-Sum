@@ -16,6 +16,7 @@ class TwoDGraph:
             self.faces = faces
             self.vertexnumber = vertices.shape[1]
             self.facenumber = len(faces)
+            self.initneighandedgecounter()
         else:
             self.get2dgraphfromvgl(vgl)
             self.initneighandedgecounter()
@@ -98,7 +99,7 @@ class TwoDGraph:
         edgecounter = np.zeros((self.vertexnumber, self.vertexnumber))
         for i in range(0,self.vertexnumber): 
             neighbourhood.append(set())
-        for i,j,k in self.faces:
+        for i,j,k in self.faces: # type: ignore
             #get all neighbours for each vertex
             neighbourhood[i].add(j)
             neighbourhood[i].add(k)

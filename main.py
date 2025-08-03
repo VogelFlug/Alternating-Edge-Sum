@@ -1,7 +1,8 @@
 #Imports
 import numpy as np
 import torch
-import torchviz
+#import torchviz
+from matplotlib import pyplot as plt
 import sys
 from io import StringIO
 
@@ -28,9 +29,6 @@ def tutteenergy(innervertices, allvertices: np.ndarray, innervertexindices, neig
     #graphy = torchviz.make_dot(energy, params={v: k for v, k in enumerate(list(innervertices))})
     #graphy.render("scuffedaaahfile", format="png")
     return energy
-
-
-            
 
 #Tutteembedding via Gradient Descent
 def gradienttutte(Graph: TwoDGraph, learnrate: float):
@@ -77,6 +75,8 @@ def gradienttutte(Graph: TwoDGraph, learnrate: float):
     newGraph = TwoDGraph(vertices=vertexs, faces=Graph.faces)
     return newGraph
 
+
+
 def AESenergy(innervertices, allvertices: np.ndarray, innervertexindices, aeslist: np.ndarray):
     fullvertex = torch.tensor(allvertices.tolist(), requires_grad=False)
     #This combines our fixed outside vertices with the changing inner vertices
@@ -87,15 +87,9 @@ def AESenergy(innervertices, allvertices: np.ndarray, innervertexindices, aeslis
     k = fullvertex[:,aeslist[:,1]]
     j = fullvertex[:,aeslist[:,2]]
     l = fullvertex[:,aeslist[:,3]]
-    # print(aeslist)
-    # print(i)
-    # print(j)
-    # print(k)
-    # print(l)
 
     #energy for each inner edge = (|ik| - |kj| + |jl| - |li|) ^ 2
     energies = (torch.linalg.norm(k-i, dim=0) - torch.linalg.norm(j-k, dim=0) + torch.linalg.norm(l-j, dim=0) - torch.linalg.norm(i-l, dim=0))
-    #print(energies)
     
     energy = torch.sum(energies ** 2)
 
@@ -115,9 +109,13 @@ def gradientAES(Graph: TwoDGraph, learnrate: float):
 
     AESlist = util.getAESList(Graph, ie)
 
+    #to remember the energies so we can plot them afterwards
+    energies = []
+
     for i in range(2000):
         #calc energy
         energy = AESenergy(Verttensor, vertices, iv, AESlist)
+        energies.append(energy.item())
         #print(energy)
         
         #get gradient through backpropagation
@@ -140,32 +138,35 @@ def gradientAES(Graph: TwoDGraph, learnrate: float):
             vertexs[:,i] = Graph.vertices[:,i]
 
     newGraph = TwoDGraph(vertices=vertexs, faces=Graph.faces)
-    return newGraph
+    return newGraph, np.array(energies)
 
 
-def main(autopath: str):
-    # Get datafile
-    x = autopath
-    #print(x)
-    data = ""
-    with open(x , "r") as f:
-        data = f.read()
-    Graph = TwoDGraph(vgl = data)
-    util.showGraph(Graph)
 
 
-    # TutteGraph = util.standardtuttembedding(Graph)
-    # util.showGraph(TutteGraph)
 
-    # FakeTuttegraph = gradienttutte(Graph, 0.001)
-    # util.showGraph(FakeTuttegraph)
 
-    print(util.getAESList(Graph, util.getinneredges(Graph.edgecounter)))
-    AESgraph = gradientAES(Graph, 0.001)
-    print(AESgraph.vertices)
-    util.showGraph(AESgraph)
 
-if __name__ == '__main__':
-    main(sys.argv[1])
+def main(Graph: TwoDGraph):   
+    #create the plots
+    fig, axs = plt.subplots(2,2)
 
+    #plot input graph for reference
+    axs[0,0].set_title("Original Graph")
+    util.showGraph(Graph, axs[0,0])
+
+    #plot the Tutte Embedding of the original Graph
+    axs[0,1].set_title("Tutte Embedding")
+    TutteGraph = util.standardtuttembedding(Graph)
+    util.showGraph(TutteGraph, axs[0,1])
+    print(util.SnapshotAES(TutteGraph))
+
+    #print(util.getAESList(Graph, util.getinneredges(Graph.edgecounter)))
+    AESgraph, energies = gradientAES(Graph, 0.001)
+    #print(AESgraph.vertices)
+    axs[1,0].set_title("AES minimized graph")
+    util.showGraph(AESgraph, axs[1,0])
+
+    axs[1,1].set_title("AES energy over optimization")
+    axs[1,1].plot(energies)
+    plt.show()
 
