@@ -44,7 +44,7 @@ def showGraph(Graph: TwoDGraph, plot):
     realt.axis("equal")
 
 #AESlist is a list where each row corresponds to one inner edge and its adjacent faces with format [i, l, j, k]
-def getAESList(Graph: TwoDGraph, inneredges: set[tuple[int,int]]):
+def getAESList(Graph: TwoDGraph, inneredges: set[tuple[int,int]]) -> np.ndarray:
     triangelist = np.zeros((len(inneredges),4))
     for count, [i, j] in enumerate(inneredges):
         triangelist[count,0] = i
@@ -53,7 +53,7 @@ def getAESList(Graph: TwoDGraph, inneredges: set[tuple[int,int]]):
         triangelist[count,1] = neighbours[0]
         triangelist[count,3] = neighbours[1]
 
-    return triangelist
+    return triangelist.astype(int)
 
 #Tutteembedding directly via Laplace Matrix
 def standardtuttembedding(Graph: TwoDGraph):
@@ -78,7 +78,7 @@ def standardtuttembedding(Graph: TwoDGraph):
             index = iv.index(neighbour)
             Lx[i,index] = Ly[i,index] = -1
     
-    print(Lx)
+    #print(Lx)
 
     #Now for the right side of the equation:        
     outx = Graph.vertices[0,ov[:]]
@@ -113,18 +113,10 @@ def standardtuttembedding(Graph: TwoDGraph):
 
 #Calculates the AES energy for a given graph, Might be scuffed since implementation is copied from regular AESenergy, TODO: fix
 def SnapshotAES(Graph: TwoDGraph):
-    allvertices = Graph.vertices
-    oe = getouteredges(Graph.edgecounter)
     ie = getinneredges(Graph.edgecounter)
-    ov = getoutervertices(oe)
-    
-    innervertexindices = getinnervertices(Graph.vertexnumber, ov)
+
     aeslist = getAESList(Graph, ie)
-    fullvertex = allvertices.tolist()
-    innervertices = allvertices[:,innervertexindices].tolist()
-    #This combines our fixed outside vertices with the changing inner vertices
-    for count, i in enumerate(innervertexindices):
-        fullvertex[:,i] = innervertices[:,count]
+    fullvertex = Graph.vertices
     
     i = fullvertex[:,aeslist[:,0]]
     k = fullvertex[:,aeslist[:,1]]
