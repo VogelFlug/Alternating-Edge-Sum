@@ -1,6 +1,7 @@
 #Imports
 import numpy as np
 import torch
+import pathlib
 #import torchviz
 from matplotlib import pyplot as plt
 import sys
@@ -146,7 +147,7 @@ def gradientAES(Graph: TwoDGraph, learnrate: float):
 
 
 
-def main(Graph: TwoDGraph):   
+def main(Graph: TwoDGraph, filepath: str):   
     #create the plots
     fig, axs = plt.subplots(2,2)
 
@@ -168,5 +169,8 @@ def main(Graph: TwoDGraph):
 
     axs[1,1].set_title("AES energy over optimization")
     axs[1,1].plot(energies)
-    plt.show()
+
+    
+    path = pathlib.Path(filepath)
+    plt.savefig(str(path.parent) + "/finalplots/" + path.name[:-4] +"_results.png")
 

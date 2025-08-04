@@ -1,4 +1,4 @@
-# This is for 2 dimensional data that has a full Graph already given at the start
+# This is for data where only a hull is provided. The points inside the hull will be randomized and then connected via Delauney Triangulation. TODO
 
 import sys
 
