@@ -37,9 +37,9 @@ def showGraph(Graph: TwoDGraph, plot):
     faces : tuple[int,int,int] = Graph.faces 
     vertices = Graph.vertices
     for [i,j,k] in faces: # type: ignore
-        realt.arrow(x = vertices[0,i],y=vertices[1,i], dx = vertices[0,j] - vertices[0,i],dy = vertices[1,j]-vertices[1,i], width = 0.015)
-        realt.arrow(x = vertices[0,j],y=vertices[1,j], dx = vertices[0,k] - vertices[0,j],dy = vertices[1,k]-vertices[1,j], width = 0.015)
-        realt.arrow(x = vertices[0,k],y=vertices[1,k], dx = vertices[0,i] - vertices[0,k],dy = vertices[1,i]-vertices[1,k], width = 0.015)
+        realt.arrow(x = vertices[0,i],y=vertices[1,i], dx = vertices[0,j] - vertices[0,i],dy = vertices[1,j]-vertices[1,i], width = 0.015, ec="black")
+        realt.arrow(x = vertices[0,j],y=vertices[1,j], dx = vertices[0,k] - vertices[0,j],dy = vertices[1,k]-vertices[1,j], width = 0.015, ec="black")
+        realt.arrow(x = vertices[0,k],y=vertices[1,k], dx = vertices[0,i] - vertices[0,k],dy = vertices[1,i]-vertices[1,k], width = 0.015, ec="black")
 
     realt.axis("equal")
 
@@ -83,7 +83,7 @@ def standardtuttembedding(Graph: TwoDGraph):
     #Now for the right side of the equation:        
     outx = Graph.vertices[0,ov[:]]
     outy = Graph.vertices[1,ov[:]]
-    Bx = By = np.zeros((ocount,icount))
+    Bx = By = np.zeros((icount,ocount))
     for i in range(0, ocount):
         innerneighbours = tuple(Graph.neighbourhood[ov[i]].intersection(iv))
         for neighbour in innerneighbours:

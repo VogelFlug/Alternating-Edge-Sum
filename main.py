@@ -90,13 +90,13 @@ def AESenergy(innervertices, allvertices: np.ndarray, innervertexindices, aeslis
     l = fullvertex[:,aeslist[:,3]]
 
     #energy for each inner edge = (|ik| - |kj| + |jl| - |li|) ^ 2
-    energies = (torch.linalg.norm(k-i, dim=0) - torch.linalg.norm(j-k, dim=0) + torch.linalg.norm(l-j, dim=0) - torch.linalg.norm(i-l, dim=0))
+    energiez = (torch.linalg.norm(k-i, dim=0) - torch.linalg.norm(j-k, dim=0) + torch.linalg.norm(l-j, dim=0) - torch.linalg.norm(i-l, dim=0))
     
-    energy = torch.sum(energies ** 2)
+    energy = torch.sum(energiez ** 2)
 
     # graphy = torchviz.make_dot(energy, params={v: k for v, k in enumerate(list(innervertices))})
     # graphy.render("AEStree", format="png")
-    return torch.sum(energies ** 2)
+    return torch.sum(energiez ** 2)
 
 def gradientAES(Graph: TwoDGraph, learnrate: float):
     vertices = Graph.vertices
@@ -113,7 +113,7 @@ def gradientAES(Graph: TwoDGraph, learnrate: float):
     #to remember the energies so we can plot them afterwards
     energies = []
 
-    for i in range(2000):
+    for i in range(10000):
         #calc energy
         energy = AESenergy(Verttensor, vertices, iv, AESlist)
         energies.append(energy.item())
@@ -152,23 +152,24 @@ def main(Graph: TwoDGraph, filepath: str):
     fig, axs = plt.subplots(2,2)
 
     #plot input graph for reference
-    axs[0,0].set_title("Original Graph")
+    axs[0,0].set_title("Original Graph", fontsize = 10)
     util.showGraph(Graph, axs[0,0])
 
-    #plot the Tutte Embedding of the original Graph
-    axs[0,1].set_title("Tutte Embedding")
+    #plot the Tutte Embedding of the original Graph and add the AES value to the side (only 6 decimal points cause otherwise it will get very messy)
+    axs[0,1].set_title("Tutte Embedding", fontsize = 10)
     TutteGraph = util.standardtuttembedding(Graph)
     util.showGraph(TutteGraph, axs[0,1])
-    print(util.SnapshotAES(TutteGraph))
+    axs[0,1].text(1.1,0.5, "AES energy for Tutte: " + str(format(util.SnapshotAES(TutteGraph),".10f")), transform=axs[0,1].transAxes,  rotation = 270, va = "center", ha="center", fontsize=7)
 
     #print(util.getAESList(Graph, util.getinneredges(Graph.edgecounter)))
     AESgraph, energies = gradientAES(Graph, 0.001)
     #print(AESgraph.vertices)
-    axs[1,0].set_title("AES minimized graph")
+    axs[1,0].set_title("AES minimized graph", fontsize = 10)
     util.showGraph(AESgraph, axs[1,0])
 
-    axs[1,1].set_title("AES energy over optimization")
+    axs[1,1].set_title("AES energy over optimization",fontsize = 10)
     axs[1,1].plot(energies)
+    axs[1,1].text(1.1,0.5, "Final AES energy: " + str(format(energies[-1], ".10f")), transform=axs[1,1].transAxes,  rotation = 270, va = "center", ha="center", fontsize=7)
 
     
     path = pathlib.Path(filepath)
