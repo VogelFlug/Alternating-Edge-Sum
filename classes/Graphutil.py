@@ -37,9 +37,9 @@ def showGraph(Graph: TwoDGraph, plot):
     faces : tuple[int,int,int] = Graph.faces 
     vertices = Graph.vertices
     for [i,j,k] in faces: # type: ignore
-        realt.plot([vertices[0,i],vertices[0,j]],[vertices[1,i],vertices[1,j]])
-        realt.plot([vertices[0,j],vertices[0,k]],[vertices[1,j],vertices[1,k]])
-        realt.plot([vertices[0,i],vertices[0,k]],[vertices[1,i],vertices[1,k]])
+        realt.arrow(x = vertices[0,i],y=vertices[1,i], dx = vertices[0,j] - vertices[0,i],dy = vertices[1,j]-vertices[1,i], width = 0.015)
+        realt.arrow(x = vertices[0,j],y=vertices[1,j], dx = vertices[0,k] - vertices[0,j],dy = vertices[1,k]-vertices[1,j], width = 0.015)
+        realt.arrow(x = vertices[0,k],y=vertices[1,k], dx = vertices[0,i] - vertices[0,k],dy = vertices[1,i]-vertices[1,k], width = 0.015)
 
     realt.axis("equal")
 
