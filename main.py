@@ -113,7 +113,7 @@ def gradientAES(Graph: TwoDGraph, learnrate: float):
     #to remember the energies so we can plot them afterwards
     energies = []
 
-    for i in range(10000):
+    for i in range(5000):
         #calc energy
         energy = AESenergy(Verttensor, vertices, iv, AESlist)
         energies.append(energy.item())
