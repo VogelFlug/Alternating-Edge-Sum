@@ -152,24 +152,33 @@ def main(Graph: TwoDGraph, filepath: str):
     fig, axs = plt.subplots(2,2)
 
     #plot input graph for reference
-    axs[0,0].set_title("Original Graph", fontsize = 10)
+    axs[0,0].set_title("Original Graph", fontsize = 7)
     util.showGraph(Graph, axs[0,0])
 
     #plot the Tutte Embedding of the original Graph and add the AES value to the side (only 6 decimal points cause otherwise it will get very messy)
-    axs[0,1].set_title("Tutte Embedding", fontsize = 10)
+    axs[0,1].set_title("Tutte Embedding", fontsize = 7)
     TutteGraph = util.standardtuttembedding(Graph)
     util.showGraph(TutteGraph, axs[0,1])
-    axs[0,1].text(1.1,0.5, "AES energy for Tutte: " + str(format(util.SnapshotAES(TutteGraph),".10f")), transform=axs[0,1].transAxes,  rotation = 270, va = "center", ha="center", fontsize=7)
+    axs[0,1].text(1.1,0.5, "AES energy for Tutte: " + str(format(util.SnapshotAES(TutteGraph),".8f")), transform=axs[0,1].transAxes,  rotation = 270, va = "center", ha="center", fontsize=7)
 
-    #print(util.getAESList(Graph, util.getinneredges(Graph.edgecounter)))
+    
     AESgraph, energies = gradientAES(Graph, 0.001)
-    #print(AESgraph.vertices)
-    axs[1,0].set_title("AES minimized graph", fontsize = 10)
+
+    axs[1,0].set_title("AES minimized graph", fontsize = 7)
     util.showGraph(AESgraph, axs[1,0])
 
-    axs[1,1].set_title("AES energy over optimization",fontsize = 10)
+    axs[1,1].set_title("AES energy over optimization",fontsize = 7)
     axs[1,1].plot(energies)
-    axs[1,1].text(1.1,0.5, "Final AES energy: " + str(format(energies[-1], ".10f")), transform=axs[1,1].transAxes,  rotation = 270, va = "center", ha="center", fontsize=7)
+    axs[1,1].text(1.1,0.5, "Final AES energy: " + str(format(energies[-1], ".8f")), transform=axs[1,1].transAxes,  rotation = 270, va = "center", ha="center", fontsize=7)
+
+    # TutteAES, Tutteenergies = gradientAES(TutteGraph, 0.001)
+    
+    # axs[2,0].set_title("AES minimized graph starting with Tutte", fontsize = 7)
+    # util.showGraph(TutteAES, axs[2,0])
+
+    # axs[2,1].set_title("AES energy over optimization",fontsize = 7)
+    # axs[2,1].plot(Tutteenergies)
+    # axs[2,1].text(1.1,0.5, "Final AES energy: " + str(format(Tutteenergies[-1], ".8f")), transform=axs[2,1].transAxes,  rotation = 270, va = "center", ha="center", fontsize=7)
 
     
     path = pathlib.Path(filepath)

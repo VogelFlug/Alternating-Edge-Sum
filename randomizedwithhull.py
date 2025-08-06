@@ -1,4 +1,4 @@
-# This is for data where only a hull is provided. The points inside the hull will be randomized and then connected via Delauney Triangulation. TODO
+# This is for data where only a hull is provided. The points inside the hull will be randomized and then connected via Delauney Triangulation. 
 
 import sys
 import numpy as np
