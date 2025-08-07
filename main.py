@@ -105,6 +105,8 @@ def gradientAES(Graph: TwoDGraph, learnrate: float):
 
     ov = util.getoutervertices(oe)
     iv = util.getinnervertices(Graph.vertexnumber, ov)
+    if(len(iv) == 0):
+        raise Exception("What is the point without innervertices!?")
 
     Verttensor = torch.tensor((vertices[:,iv]).tolist(), requires_grad=True)
 
@@ -154,6 +156,7 @@ def main(Graph: TwoDGraph, filepath: str):
     #plot input graph for reference
     axs[0,0].set_title("Original Graph", fontsize = 7)
     util.showGraph(Graph, axs[0,0])
+    plt.show()
 
     #plot the Tutte Embedding of the original Graph and add the AES value to the side (only 6 decimal points cause otherwise it will get very messy)
     axs[0,1].set_title("Tutte Embedding", fontsize = 7)
