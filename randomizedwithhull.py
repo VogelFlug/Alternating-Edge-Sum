@@ -7,6 +7,8 @@ from main import main
 from classes.TwoDGraph import TwoDGraph
 from scipy.spatial import Delaunay
 
+filepath = "data/2dfolder/onlyhulls/basichull.txt"
+
 def creategraphfromhull(hull: np.ndarray, nrinsides: int):
     #Step one: create random number of vertices on the inside, done via dirichlet distribution (Idk either) and barycentric coordinates of the hull
     hullsize = hull.shape[0]
@@ -26,10 +28,9 @@ def creategraphfromhull(hull: np.ndarray, nrinsides: int):
 
 
 if __name__ == '__main__':
-    if(len(sys.argv)<2):
-        raise Exception("You need to provide Graph Data")
-    
-    filepath = sys.argv[1]
+    # if(len(sys.argv)<2):
+    #     raise Exception("You need to provide Graph Data")
+    # filepath = sys.argv[1]
 
     #get hull vertices, should have format x1 y1\n x2 y2 etc.
     vertices = np.loadtxt(filepath, delimiter = " ")
@@ -37,7 +38,7 @@ if __name__ == '__main__':
     print(nrinsides)
 
     randomized_graph = creategraphfromhull(vertices, nrinsides)
-    main(randomized_graph, filepath[:-4] + str(nrinsides) + filepath[-4:])
+    main(randomized_graph, "output" + filepath[4:-4] + str(nrinsides))
 
 
 

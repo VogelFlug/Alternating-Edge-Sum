@@ -1,7 +1,6 @@
 #Imports
 import numpy as np
 import torch
-import pathlib
 #import torchviz
 from matplotlib import pyplot as plt
 import sys
@@ -149,14 +148,13 @@ def gradientAES(Graph: TwoDGraph, learnrate: float):
 
 
 
-def main(Graph: TwoDGraph, filepath: str):   
+def main(Graph: TwoDGraph, outputpath: str):   
     #create the plots
     fig, axs = plt.subplots(2,2)
 
     #plot input graph for reference
     axs[0,0].set_title("Original Graph", fontsize = 7)
     util.showGraph(Graph, axs[0,0])
-    plt.show()
 
     #plot the Tutte Embedding of the original Graph and add the AES value to the side (only 6 decimal points cause otherwise it will get very messy)
     axs[0,1].set_title("Tutte Embedding", fontsize = 7)
@@ -184,6 +182,5 @@ def main(Graph: TwoDGraph, filepath: str):
     # axs[2,1].text(1.1,0.5, "Final AES energy: " + str(format(Tutteenergies[-1], ".8f")), transform=axs[2,1].transAxes,  rotation = 270, va = "center", ha="center", fontsize=7)
 
     
-    path = pathlib.Path(filepath)
-    plt.savefig(str(path.parent) + "/finalplots/" + path.name[:-4] +"_results.png")
+    plt.savefig(outputpath + "_results.pdf")
 

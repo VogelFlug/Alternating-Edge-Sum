@@ -1,5 +1,6 @@
 import numpy as np
 from matplotlib import pyplot as plt
+from matplotlib.patches import Polygon
 from .TwoDGraph import TwoDGraph
 
 #outer edges only appear once
@@ -25,23 +26,34 @@ def getinnervertices(vertexnumber, outvertices):
     return tuple(set(range(1,vertexnumber)).difference(outvertices))
 
 #This plots a graph in the provided plot
-def showGraph(Graph: TwoDGraph, plot):
-    realt = plot
-    realt.scatter(Graph.vertices[0,:], Graph.vertices[1,:], color = "red")
+def showGraph(Graph: TwoDGraph, fullplot):
+    fullplot.scatter(Graph.vertices[0,:], Graph.vertices[1,:], color = "red")
     #write index to make sure no swapping around happens
     for idx in range(Graph.vertices.shape[1]):
         x, y = Graph.vertices[0, idx], Graph.vertices[1, idx]
-        realt.text(x, y, str(idx), fontsize=9, color="blue")
+        fullplot.text(x, y, str(idx), fontsize=9, color="blue")
 
 
     faces : tuple[int,int,int] = Graph.faces 
     vertices = Graph.vertices
     for [i,j,k] in faces: # type: ignore
-        realt.arrow(x = vertices[0,i],y=vertices[1,i], dx = vertices[0,j] - vertices[0,i],dy = vertices[1,j]-vertices[1,i], width = 0.015, ec="black")
-        realt.arrow(x = vertices[0,j],y=vertices[1,j], dx = vertices[0,k] - vertices[0,j],dy = vertices[1,k]-vertices[1,j], width = 0.015, ec="black")
-        realt.arrow(x = vertices[0,k],y=vertices[1,k], dx = vertices[0,i] - vertices[0,k],dy = vertices[1,i]-vertices[1,k], width = 0.015, ec="black")
+        # Get determinant to check for valid orientation
+        reali, realj, realk = vertices[:,i],vertices[:,j],vertices[:,k]
+        area = np.linalg.det([realj-reali, realk-reali])
+        if(area >= 0):
+            t = Polygon([reali,realj,realk], color = "green")
+            fullplot.add_patch(t)
+            fullplot.plot([reali[0],realj[0]], [reali[1],realj[1]], color = "black")
+            fullplot.plot([realj[0],realk[0]], [realj[1],realk[1]], color = "black")
+            fullplot.plot([reali[0],realk[0]], [reali[1],realk[1]], color = "black")
+        else:
+            t = Polygon([reali,realj,realk], color = "red")
+            fullplot.add_patch(t)
+            fullplot.plot([reali[0],realj[0]], [reali[1],realj[1]], color = "black")
+            fullplot.plot([realj[0],realk[0]], [realj[1],realk[1]], color = "black")
+            fullplot.plot([reali[0],realk[0]], [reali[1],realk[1]], color = "black")
 
-    realt.axis("equal")
+    fullplot.axis("equal")
 
 #AESlist is a list where each row corresponds to one inner edge and its adjacent faces with format [i, l, j, k]
 def getAESList(Graph: TwoDGraph, inneredges: set[tuple[int,int]]) -> np.ndarray:

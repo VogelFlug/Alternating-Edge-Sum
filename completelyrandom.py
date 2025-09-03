@@ -33,4 +33,4 @@ if __name__ == '__main__':
     randomized_graph = creategraph(vertexnumber)
 
     #for naming convention, I will use the state of the random numpy generator that generates our graph
-    main(randomized_graph, "data/2dfolder/randomized/Graph_of_seed_" + str(seed) + ".txt")
+    main(randomized_graph, "output/2dfolder/randomized/Graph_of_seed_" + str(seed))

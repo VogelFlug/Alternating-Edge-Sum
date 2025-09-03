@@ -5,16 +5,17 @@ import sys
 from main import main
 from classes.TwoDGraph import TwoDGraph
 
+filepath = "data/2dfolder/fulldata/basicexample.txt"
+
 if __name__ == '__main__':
-    if(len(sys.argv)<2):
-        raise Exception("You need to provide Graph Data")
-    
-    filepath = sys.argv[1]
+    # if(len(sys.argv)<2):
+    #     raise Exception("You need to provide Graph Data")
+    #filepath = sys.argv[1]
 
     data = ""
     with open(filepath , "r") as f:
         data = f.read()
     Graph = TwoDGraph(vgl = data)
-    main(Graph, filepath)
+    main(Graph, "output" + filepath[4:-4])
 
 
