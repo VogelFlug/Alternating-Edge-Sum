@@ -23,7 +23,7 @@ def getoutervertices(edgelist):
     return tuple(vertices)
 
 def getinnervertices(vertexnumber, outvertices):
-    return tuple(set(range(1,vertexnumber)).difference(outvertices))
+    return tuple(set(range(0,vertexnumber)).difference(outvertices))
 
 #This plots a graph in the provided plot
 def showGraph(Graph: TwoDGraph, fullplot):
@@ -77,22 +77,26 @@ def standardtuttembedding(Graph: TwoDGraph):
     iv = getinnervertices(Graph.vertexnumber, ov)
     icount = len(iv)
 
-    #First get matrix L for inner vertex positions. The diagonal is filled with the degree of the inner vertex it represents, L_{i,j} is -1 if (i,j) is an inneredge
+    #First get matrix L for inner vertex positions. The diagonal is filled with 1 to represent the vertex itself and the rest is just subtracting the inner vertex if it is a neighbour of the one of interest (divided by the degree cause Tutte)
     Lx = np.zeros((icount, icount))
     Ly = np.zeros((icount, icount))
+    #This is just so we can remember the degree for later when we use it with the right side 
+    degreematrix = np.zeros((icount, icount))
+
     for i in range(0,icount):
         nh = Graph.neighbourhood[iv[i]]
         nhnr = len(nh)
-        Lx[i,i] = Ly[i,i] = nhnr
+        Lx[i,i] = Ly[i,i] = 1
+        degreematrix[i,i] = 1/nhnr
 
         innerneighbours = tuple(nh.intersection(iv))
         for neighbour in innerneighbours:
             index = iv.index(neighbour)
-            Lx[i,index] = Ly[i,index] = -1
+            Lx[i,index] = Ly[i,index] = -1/nhnr
     
     #print(Lx)
 
-    #Now for the right side of the equation:        
+    #Now for the right side of the equation. Basically works the same as L, but with the outer vertices instead.
     outx = Graph.vertices[0,ov[:]]
     outy = Graph.vertices[1,ov[:]]
     Bx = By = np.zeros((icount,ocount))
@@ -102,8 +106,8 @@ def standardtuttembedding(Graph: TwoDGraph):
             index = iv.index(neighbour)
             Bx[index,i] = By[index,i] = 1
     
-    Bxvec = np.matmul(Bx, outx)
-    Byvec = np.matmul(By, outy)
+    Bxvec = np.matmul(degreematrix,np.matmul(Bx, outx))
+    Byvec = np.matmul(degreematrix,np.matmul(By, outy))
     
     #This code didnt work until i put in this print statement?
     #print(Bxvec)

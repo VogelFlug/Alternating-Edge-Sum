@@ -5,7 +5,7 @@ import sys
 from main import main
 from classes.TwoDGraph import TwoDGraph
 
-filepath = "data/2dfolder/fulldata/basicexample.txt"
+filepath = "data/2dfolder/fulldata/notquitemb.txt"
 
 if __name__ == '__main__':
     # if(len(sys.argv)<2):
