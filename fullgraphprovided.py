@@ -6,6 +6,8 @@ from main import main
 from classes.TwoDGraph import TwoDGraph
 
 filepath = "data/2dfolder/fulldata/notquitemb.txt"
+attempts = 5
+stepsize = 100
 
 if __name__ == '__main__':
     # if(len(sys.argv)<2):
@@ -16,6 +18,6 @@ if __name__ == '__main__':
     with open(filepath , "r") as f:
         data = f.read()
     Graph = TwoDGraph(vgl = data)
-    main(Graph, "output" + filepath[4:-4])
+    main(Graph, "output" + filepath[4:-4], attempts, stepsize)
 
 

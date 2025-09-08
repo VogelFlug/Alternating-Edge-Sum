@@ -97,7 +97,7 @@ def AESenergy(innervertices, allvertices: np.ndarray, innervertexindices, aeslis
     # graphy.render("AEStree", format="png")
     return torch.sum(energiez ** 2)
 
-def gradientAES(Graph: TwoDGraph, learnrate: float):
+def gradientAES(Graph: TwoDGraph, learnrate: float, loops: int):
     vertices = Graph.vertices
     oe = util.getouteredges(Graph.edgecounter)
     ie = util.getinneredges(Graph.edgecounter)
@@ -114,7 +114,7 @@ def gradientAES(Graph: TwoDGraph, learnrate: float):
     #to remember the energies so we can plot them afterwards
     energies = []
 
-    for i in range(5000):
+    for i in range(loops):
         #calc energy
         energy = AESenergy(Verttensor, vertices, iv, AESlist)
         energies.append(energy.item())
@@ -145,12 +145,38 @@ def gradientAES(Graph: TwoDGraph, learnrate: float):
 
 
 
+def gradientAESfixededges(Graph: TwoDGraph, learnrate: float):
+    vertices = Graph.vertices
+    oe = util.getouteredges(Graph.edgecounter)
+    ie = util.getinneredges(Graph.edgecounter)
+
+    ov = util.getoutervertices(oe)
+    iv = util.getinnervertices(Graph.vertexnumber, ov)
+    if(len(iv) == 0):
+        raise Exception("What is the point without innervertices!?")
+    return
+
+
+def main(Graph: TwoDGraph, outputpath: str, attempts = 1, stepsize = 2000):   
+    '''Main function. This takes a 2 dimensional Graph, calculates its Tutte Embedding (And the Tutte-Embeddings AES energy for reference) 
+    and then uses Gradient Descent to minimize the AES energy in an attempt to create an Embedding based on sphere packing. The results, including the AES energy over time all end up in a pdf
+
+    # Input Variables:
+    # Graph = Input Graph. You're welcome
+    # outputpath = Where the PDF ends up
+    # attempts = How many times you wanna run this with different numbers of loops. Mostly serves debugging to ease visualize the change in the graph over time.
+    # stepsize = How many more training steps each iteration takes then the last. Aka, attempt 1 has stepsize many loops, attempt 2 has 2*stepsize many loops etc.
+
+    # Output:
+    # The pdf. Thas it for now
+    
+    # TODO: Find a way to show the x axes for lots of attempts?
+    '''
 
 
 
-def main(Graph: TwoDGraph, outputpath: str):   
     #create the plots
-    fig, axs = plt.subplots(2,2)
+    fig, axs = plt.subplots(1 + attempts,2)
 
     #plot input graph for reference
     axs[0,0].set_title("Original Graph", fontsize = 7)
@@ -160,17 +186,18 @@ def main(Graph: TwoDGraph, outputpath: str):
     axs[0,1].set_title("Tutte Embedding", fontsize = 7)
     TutteGraph = util.standardtuttembedding(Graph)
     util.showGraph(TutteGraph, axs[0,1])
-    axs[0,1].text(1.1,0.5, "AES energy for Tutte: " + str(format(util.SnapshotAES(TutteGraph),".8f")), transform=axs[0,1].transAxes,  rotation = 270, va = "center", ha="center", fontsize=7)
+    axs[0,1].text(1.1,0.5, "    AES energy\n  for Tutte: \n     " + str(format(util.SnapshotAES(TutteGraph),".8f")), transform=axs[0,1].transAxes,  rotation = 0, va = "center", ha="center", fontsize=7)
 
     
-    AESgraph, energies = gradientAES(Graph, 0.001)
+    for i in range(1, 1 + attempts):
+        AESgraph, energies = gradientAES(Graph, 0.001, i * stepsize)
 
-    axs[1,0].set_title("AES minimized graph", fontsize = 7)
-    util.showGraph(AESgraph, axs[1,0])
+        axs[i,0].set_title("AES minimized graph", fontsize = 7, y = -0.25)
+        util.showGraph(AESgraph, axs[i,0])
 
-    axs[1,1].set_title("AES energy over optimization",fontsize = 7)
-    axs[1,1].plot(energies)
-    axs[1,1].text(1.1,0.5, "Final AES energy: " + str(format(energies[-1], ".8f")), transform=axs[1,1].transAxes,  rotation = 270, va = "center", ha="center", fontsize=7)
+        axs[i,1].set_title("AES energy over optimization",fontsize = 7, y = -0.25)
+        axs[i,1].plot(energies)
+        axs[i,1].text(1.1,0.5, " Final AES\n  energy:\n     " + str(format(energies[-1], ".8f")), transform=axs[i,1].transAxes,  rotation = 0, va = "center", ha="center", fontsize=7)
 
     # TutteAES, Tutteenergies = gradientAES(TutteGraph, 0.001)
     
@@ -183,4 +210,3 @@ def main(Graph: TwoDGraph, outputpath: str):
 
     
     plt.savefig(outputpath + "_results.pdf")
-

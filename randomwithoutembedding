@@ -7,6 +7,9 @@ from main import main
 from classes.TwoDGraph import TwoDGraph
 from scipy.spatial import Delaunay
 
+attempts = 1
+stepsize = 2000
+
 def creategraph(vertexnumber):
     #Step one: create random number of vertices on the inside, done via dirichlet distribution (Idk either) and barycentric coordinates of the hull
 

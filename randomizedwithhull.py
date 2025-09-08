@@ -9,6 +9,9 @@ from scipy.spatial import Delaunay
 
 filepath = "data/2dfolder/onlyhulls/basichull.txt"
 
+attempts = 5
+stepsize = 100
+
 def creategraphfromhull(hull: np.ndarray, nrinsides: int):
     #Step one: create random number of vertices on the inside, done via dirichlet distribution (Idk either) and barycentric coordinates of the hull
     hullsize = hull.shape[0]
