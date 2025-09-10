@@ -1,4 +1,4 @@
-# Currently just the regular random file. TODO: Make this the random file, but it reshuffles the vertices to destroy the embedding
+# Creates completely random Graph without an embedding. Pretty worthless currently, as it doesn't really have an outer hull to work with
 
 import sys
 import numpy as np
@@ -22,18 +22,24 @@ def creategraph(vertexnumber):
 
     #Step two: create the graph based of these vertices with Delaunay
     tri = Delaunay(newvertices)
-    return TwoDGraph(vertices=newvertices.T, faces=tri.simplices)
+
+    #Step three: Hand in the faces as they are, but shuffle the order of the vertices to ruin the embedding
+    shuffleseed = int(200*np.random.rand()) # So we can reuse graphs with different shuffling
+    np.random.seed(shuffleseed)
+    neworder = np.arange(vertexnumber)
+    np.random.shuffle(neworder) # new order of the vertices
+    return TwoDGraph(vertices=newvertices[neworder,:].T, faces=tri.simplices), shuffleseed
 
 
 if __name__ == '__main__':
     #we first randomize the state. This is ironically so we can revisit graphs later on by reusing the seed because the get_state function is giving me an aneurysm
-    seed = 150  #int(200 * np.random.rand())
+    seed = int(200 * np.random.rand())
     np.random.seed(seed)
 
     vertexnumber = int(3 + 10*np.random.rand())
     print(vertexnumber)
 
-    randomized_graph = creategraph(vertexnumber)
+    randomized_graph, shuffleseed = creategraph(vertexnumber)
 
     #for naming convention, I will use the state of the random numpy generator that generates our graph
-    main(randomized_graph, "output/2dfolder/randomized/Graph_of_seed_" + str(seed))
+    main(randomized_graph, "output/2dfolder/randomizedwithoutembedding/Graph_of_seed_" + str(seed) + "_" + str(shuffleseed))
