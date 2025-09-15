@@ -1,7 +1,8 @@
 # Creates completely random Graph without an embedding. Pretty worthless currently, as it doesn't really have an outer hull to work with
 
-import sys
 import numpy as np
+import sys
+sys.path.insert(0, 'C:/Users/ich/Desktop/Uni/Alternating-Edge-Sum')
 
 from main import main
 from classes.TwoDGraph import TwoDGraph

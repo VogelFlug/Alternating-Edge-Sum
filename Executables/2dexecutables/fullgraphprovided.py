@@ -1,6 +1,7 @@
 # This is for 2 dimensional data that has a full Graph already given at the start
 
 import sys
+sys.path.insert(0, 'C:/Users/ich/Desktop/Uni/Alternating-Edge-Sum')
 
 from main import main
 from classes.TwoDGraph import TwoDGraph

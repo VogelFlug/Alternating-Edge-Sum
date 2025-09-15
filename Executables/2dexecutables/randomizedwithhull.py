@@ -1,7 +1,8 @@
 # This is for data where only a hull is provided. The points inside the hull will be randomized and then connected via Delauney Triangulation. 
 
-import sys
 import numpy as np
+import sys
+sys.path.insert(0, 'C:/Users/ich/Desktop/Uni/Alternating-Edge-Sum')
 
 from main import main
 from classes.TwoDGraph import TwoDGraph

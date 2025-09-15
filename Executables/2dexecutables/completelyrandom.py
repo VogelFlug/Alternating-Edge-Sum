@@ -1,7 +1,9 @@
 # This does not require dataa and will create and entirely randomized graph connected via Delauney Triangulation.
 
-import sys
 import numpy as np
+import sys
+sys.path.insert(0, 'C:/Users/ich/Desktop/Uni/Alternating-Edge-Sum')
+
 
 from main import main
 from classes.TwoDGraph import TwoDGraph
