@@ -7,8 +7,8 @@ from main import main
 from classes.TwoDGraph import TwoDGraph
 
 filepath = "data/2dfolder/fulldata/notquitemb.txt"
-attempts = 5
-stepsize = 100
+attempts = 1
+stepsize = 30000
 
 if __name__ == '__main__':
     # if(len(sys.argv)<2):
