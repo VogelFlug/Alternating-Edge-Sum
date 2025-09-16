@@ -5,7 +5,7 @@ import sys
 sys.path.insert(0, 'C:/Users/ich/Desktop/Uni/Alternating-Edge-Sum')
 
 from main import main
-from classes.TwoDGraph import TwoDGraph
+from util.TwoDGraph import TwoDGraph
 from scipy.spatial import Delaunay
 
 attempts = 1

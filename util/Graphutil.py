@@ -126,22 +126,3 @@ def standardtuttembedding(Graph: TwoDGraph):
     newGraph = TwoDGraph(vertices=newvertices, faces = Graph.faces)
 
     return newGraph
-
-#Calculates the AES energy for a given graph, Might be scuffed since implementation is copied from regular AESenergy, TODO: fix
-def SnapshotAES(Graph: TwoDGraph):
-    ie = getinneredges(Graph.edgecounter)
-
-    aeslist = getAESList(Graph, ie)
-    fullvertex = Graph.vertices
-    
-    i = fullvertex[:,aeslist[:,0]]
-    k = fullvertex[:,aeslist[:,1]]
-    j = fullvertex[:,aeslist[:,2]]
-    l = fullvertex[:,aeslist[:,3]]
-
-    #energy for each inner edge = (|ik| - |kj| + |jl| - |li|) ^ 2
-    energies = (np.linalg.norm(k-i, axis=0) - np.linalg.norm(j-k, axis=0) + np.linalg.norm(l-j, axis=0) - np.linalg.norm(i-l, axis=0))
-    
-    energy = np.sum(energies ** 2)
-
-    return np.sum(energies ** 2)
