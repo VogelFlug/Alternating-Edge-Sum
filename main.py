@@ -33,7 +33,7 @@ def gradientAESfixedvertices(Graph: TwoDGraph, learnrate: float, loops: int):
     ov = gutil.getoutervertices(oe)
     iv = gutil.getinnervertices(Graph.vertexnumber, ov)
     if(len(iv) == 0):
-        raise Exception("What is the point without innervertices!?")
+        raise Exception("This function doesn't work without inner vertices, as there'd be nothing to optimize")
 
     Verttensor = torch.tensor((vertices[:,iv]).tolist(), requires_grad=True)
 
@@ -44,11 +44,11 @@ def gradientAESfixedvertices(Graph: TwoDGraph, learnrate: float, loops: int):
 
     for i in range(loops):
         #calc energy
-        energy = optimizers.AESvertexenergy(Verttensor, vertices, iv, AESlist)
+        energy = optimizers.AESinnervertexenergy(Verttensor, vertices, iv, AESlist)
         energies.append(energy.item())
         #print(energy)
         
-        #get gradient through backpropagation
+        # get gradient through backpropagation
         energy.backward()
         
 
@@ -56,7 +56,7 @@ def gradientAESfixedvertices(Graph: TwoDGraph, learnrate: float, loops: int):
             Verttensor -= learnrate * Verttensor.grad # type: ignore
 
         #print(Xtensor)
-        #Gradienten zurücksetzen
+        # reset Gradient
         Verttensor.grad.zero_() # type: ignore
     
     vertexs = np.zeros((2,Graph.vertexnumber))
@@ -72,17 +72,56 @@ def gradientAESfixedvertices(Graph: TwoDGraph, learnrate: float, loops: int):
 
 
 
-#TODO will be gradientAES with fixedouteredges and using the inner edges as variables to optimize
-def gradientAESfixededges(Graph: TwoDGraph, learnrate: float):
+def gradientAESflexibleedges(Graph: TwoDGraph, learnrate: float, loops: int):
+    '''Basically the function above but a penalization on the outer edge length rather than fixing the outer vertices themselves
+    '''
     vertices = Graph.vertices
-    oe = gutil.getouteredges(Graph.edgecounter)
+    oe = np.array(list(gutil.getouteredges(Graph.edgecounter)))
     ie = gutil.getinneredges(Graph.edgecounter)
 
-    ov = gutil.getoutervertices(oe)
-    iv = gutil.getinnervertices(Graph.vertexnumber, ov)
-    if(len(iv) == 0):
-        raise Exception("What is the point without innervertices!?")
-    return
+    # to penalize the outer edge lengths, we need to know them first
+    edgevectors = vertices[:,oe[1,:]] - vertices[:,oe[0,:]]
+    edgelengths = torch.tensor(np.linalg.norm(edgevectors, axis = 0), requires_grad = False)
+
+    Verttensor = torch.tensor(vertices, requires_grad=True)
+
+    AESlist = gutil.getAESList(Graph, ie)
+
+    #to remember the energies so we can plot them afterwards
+    energies = []
+
+    for i in range(loops):
+        # calc energy TODO: Optimize edge lengths rather than vertices. Could easily do, but currently not sure how i would reconstruct the Graph after?
+        energy = optimizers.outeredgefixer(Verttensor, oe, edgelengths) + optimizers.AESallvertexenergy(Verttensor, AESlist)
+        energies.append(energy.item())
+        #print(energy)
+        
+        # get gradient through backpropagation
+        energy.backward()
+        
+
+        with torch.no_grad():
+            Verttensor -= learnrate * Verttensor.grad # type: ignore
+
+        #print(Xtensor)
+        # Reset Gradient
+        Verttensor.grad.zero_() # type: ignore
+    
+    vertexs = Verttensor.detach().numpy()
+    # TODO: Reconstruct graph from edgelengths
+    
+
+    newGraph = TwoDGraph(vertices=vertexs, faces=Graph.faces)
+    return newGraph, np.array(energies)
+
+
+
+
+# TODO: maybe introduce a function that fully fixes the outer edge lengths?
+
+
+
+
 
 
 def main(Graph: TwoDGraph, outputpath: str, attempts = 1, stepsize = 2000):   
@@ -118,7 +157,7 @@ def main(Graph: TwoDGraph, outputpath: str, attempts = 1, stepsize = 2000):
 
     
     for i in range(1, 1 + attempts):
-        AESgraph, energies = gradientAESfixedvertices(Graph, 0.001, i * stepsize)
+        AESgraph, energies = gradientAESflexibleedges(Graph, 0.001, i * stepsize)
 
         axs[i,0].set_title("AES minimized graph", fontsize = 7, y = -0.25)
         gutil.showGraph(AESgraph, axs[i,0])
@@ -137,4 +176,4 @@ def main(Graph: TwoDGraph, outputpath: str, attempts = 1, stepsize = 2000):
     # axs[2,1].text(1.1,0.5, "Final AES energy: " + str(format(Tutteenergies[-1], ".8f")), transform=axs[2,1].transAxes,  rotation = 270, va = "center", ha="center", fontsize=7)
 
     
-    plt.savefig(outputpath + "_results.pdf")
+    plt.savefig(outputpath + "_outeredgefixertest.pdf")
