@@ -126,3 +126,15 @@ def standardtuttembedding(Graph: TwoDGraph):
     newGraph = TwoDGraph(vertices=newvertices, faces = Graph.faces)
 
     return newGraph
+
+
+def optimizefromedgelengths(Graph: TwoDGraph, edgelengths):
+    '''Reconstructs a Graph from edgelengths via optimization.
+    
+    # Input variables:
+    # Graph = Graph with which to start the optimization, will probably just be the original graph.
+    # edgelengths = edgelengths we have generated, should be in the order outeredges-inneredges as returned by the functions at the top of this file
+
+    # Output: New Graph determined to be "close enough" to the original edgelengths
+    '''
+    return 

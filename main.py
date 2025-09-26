@@ -91,8 +91,64 @@ def gradientAESflexibleedges(Graph: TwoDGraph, learnrate: float, loops: int):
     energies = []
 
     for i in range(loops):
-        # calc energy TODO: Optimize edge lengths rather than vertices. Could easily do, but currently not sure how i would reconstruct the Graph after?
-        energy = optimizers.outeredgefixer(Verttensor, oe, edgelengths) + optimizers.AESallvertexenergy(Verttensor, AESlist)
+        # get the current lenghts of our outer edges
+        tmpedgevectors = Verttensor[:,oe[1,:]] - Verttensor[:,oe[0,:]]
+        curedgelengths = torch.linalg.norm(tmpedgevectors, axis = 0)
+
+        # calculate energy 
+        energy = optimizers.outeredgefixer(curedgelengths, edgelengths) + optimizers.AESallvertexenergy(Verttensor, AESlist)
+        energies.append(energy.item())
+        #print(energy)
+        
+        # get gradient through backpropagation
+        energy.backward()
+        
+
+        with torch.no_grad():
+            Verttensor -= learnrate * Verttensor.grad # type: ignore
+
+        #print(Xtensor)
+        # Reset Gradient
+        Verttensor.grad.zero_() # type: ignore
+    
+    vertexs = Verttensor.detach().numpy()
+    
+
+    newGraph = TwoDGraph(vertices=vertexs, faces=Graph.faces)
+    return newGraph, np.array(energies)
+
+
+
+def gradientAESoptimizeedges(Graph: TwoDGraph, learnrate: float, loops: int):
+    '''We now optimize the edgelengths directly, rather than optimizing the vertices first. 
+    TODO: figure out a way to reconstruct the graph, for now i will implement that with another optimization
+    '''
+    vertices = Graph.vertices
+    oe = np.array(list(gutil.getouteredges(Graph.edgecounter)))
+    ie = gutil.getinneredges(Graph.edgecounter)
+
+    # to penalize the outer edge lengths, we need to know them first
+    alledges = np.concatenate((oe,np.array(list(ie))))
+    outeredgevectors = vertices[:,oe[:,1]] - vertices[:,oe[:,0]]
+    outeredgelengths = torch.tensor(np.linalg.norm(outeredgevectors, axis = 0), requires_grad = False)
+
+    # rather than a vector we optimzie, for purposes of efficiency we introduce a matrix over all vertices that notes the edgelength 
+    # between vertices i and j in the cell (i,j). Other cells will be left as 0. If this can be done more efficiently than a for loop, that'd be pretty sick
+    # TODO: investigate if having this be a matrix with a bunch of 0 values causes problems?
+    edgematrix = np.zeros((vertices.shape[1], vertices.shape[1]))
+    for edge in alledges:
+        edgematrix[edge[0],edge[1]] = edgematrix[edge[1],edge[0]] = np.linalg.norm(vertices[:,edge[1]] - vertices[:,edge[0]])
+
+    edgetensor = torch.tensor(edgematrix, requires_grad = True)
+
+    AESlist = gutil.getAESList(Graph, ie)
+
+    #to remember the energies so we can plot them afterwards
+    energies = []
+
+    for i in range(loops):
+        # calc energy TODO: Rewrite AES energy to be based on just the edge lengths
+        energy = optimizers.outeredgefixer(edgetensor[oe[:,0],oe[:,1]], outeredgelengths) + optimizers.AESallvertexenergy(Verttensor, AESlist)
         energies.append(energy.item())
         #print(energy)
         
@@ -157,7 +213,7 @@ def main(Graph: TwoDGraph, outputpath: str, attempts = 1, stepsize = 2000):
 
     
     for i in range(1, 1 + attempts):
-        AESgraph, energies = gradientAESflexibleedges(Graph, 0.001, i * stepsize)
+        AESgraph, energies = gradientAESoptimizeedges(Graph, 0.001, i * stepsize)
 
         axs[i,0].set_title("AES minimized graph", fontsize = 7, y = -0.25)
         gutil.showGraph(AESgraph, axs[i,0])

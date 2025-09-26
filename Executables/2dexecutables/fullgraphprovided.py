@@ -6,9 +6,9 @@ sys.path.insert(0, 'C:/Users/ich/Desktop/Uni/Alternating-Edge-Sum')
 from main import main
 from util.TwoDGraph import TwoDGraph
 
-filepath = "data/2dfolder/fulldata/notquitemb.txt"
-attempts = 2
-stepsize = 5000
+filepath = "data/2dfolder/fulldata/megabasic.txt"
+attempts = 1
+stepsize = 2000
 
 if __name__ == '__main__':
     # if(len(sys.argv)<2):

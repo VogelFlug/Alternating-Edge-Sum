@@ -5,10 +5,10 @@ import torch
 
 from . import Graphutil as gutil
 from .TwoDGraph import TwoDGraph
-from .optimizationenergies import tutteenergy
 
 #Tutteembedding via Gradient Descent
 def gradienttutte(Graph: TwoDGraph, learnrate: float):
+    '''Gradient descent to achieve Tutte embedding. Not important, simply an example to practice gradient descent'''
     vertices = Graph.vertices
     oe = gutil.getouteredges(Graph.edgecounter)
     ie = gutil.getinneredges(Graph.edgecounter)
@@ -51,3 +51,36 @@ def gradienttutte(Graph: TwoDGraph, learnrate: float):
 
     newGraph = TwoDGraph(vertices=vertexs, faces=Graph.faces)
     return newGraph
+
+
+
+def tutteenergy(innervertices, allvertices: np.ndarray, innervertexindices, neighbourhood: tuple[set[int]], axis):
+    '''Calculates the "Tutte energy" aka how close to a Tutte embedding a Graph is for the given axis. 
+    Not particularly important for the problem at hand, just serves as a simple example of gradient descent
+
+    # Input Variables:
+    # innervertices = the tensor we are trying to optimize, holding the coordinates of the innervertices
+    # allvertices = all of the vertices in the Graph
+    # innervertexindices = a list that holds the indices of the innervertices tensor within the allvertices array (aka the actual indices of the inner vertices within the graph)
+    # neighbourhood = a tuple of sets, each set holding the neighbourhood of the vertex at that index
+    # axis = the axis over which you wish to calculate this energy
+
+    # Output:
+    # A squared sum over all vertices of how close each of them is to being the average of each of his neighbours for that specific axis
+    '''
+    energy = 0
+    for i,vertex in enumerate(innervertices):
+        nh = tuple(neighbourhood[innervertexindices[i]])
+        #print(nh)
+        neighbourcounter = len(nh)
+        neighbourhoodsum = 0
+        for neighbour in nh:
+            if(neighbour in innervertexindices):
+                neighbourhoodsum += innervertices[innervertexindices.index(neighbour)]
+            else:
+                neighbourhoodsum += allvertices[axis, neighbour]
+        energy += (vertex-(neighbourhoodsum/neighbourcounter))**2
+
+    #graphy = torchviz.make_dot(energy, params={v: k for v, k in enumerate(list(innervertices))})
+    #graphy.render("scuffedaaahfile", format="png")
+    return energy
