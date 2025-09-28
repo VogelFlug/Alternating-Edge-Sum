@@ -29,7 +29,7 @@ def creategraph(vertexnumber):
 
 if __name__ == '__main__':
     #we first randomize the state. This is ironically so we can revisit graphs later on by reusing the seed because the get_state function is giving me an aneurysm
-    seed = 194# int(200 * np.random.rand())
+    seed = int(200 * np.random.rand())
     np.random.seed(seed)
 
     vertexnumber = int(3 + 10*np.random.rand())

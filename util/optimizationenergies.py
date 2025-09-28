@@ -36,7 +36,7 @@ def AESinnervertexenergy(innervertices, allvertices: np.ndarray, innervertexindi
     # innervertices = the tensor we are trying to optimize, holding the coordinates of the innervertices
     # allvertices = all of the vertices in the Graph
     # innervertexindices = a list that holds the indices of the innervertices tensor within the allvertices array (aka the actual indices of the inner vertices within the graph)
-    # aeslist = list where each row corresponds to one inner edge (i,j) and its adjacent faces with format [i, l, j, k]
+    # aeslist = list where each row corresponds to one inner edge (i,j) and its adjacent faces with format [i, k, j, l]
     # withoutervertices = TODO, summarize this function and the next
     '''
     fullvertex = torch.tensor(allvertices.tolist(), requires_grad=False)
@@ -56,7 +56,7 @@ def AESinnervertexenergy(innervertices, allvertices: np.ndarray, innervertexindi
 
     # graphy = torchviz.make_dot(energy, params={v: k for v, k in enumerate(list(innervertices))})
     # graphy.render("AEStree", format="png")
-    return torch.sum(energiez ** 2)
+    return energy
 
 def AESallvertexenergy(vertices, aeslist: np.ndarray):
     '''Doubly same as above, but the outer vertices are no longer fixed
@@ -65,7 +65,7 @@ def AESallvertexenergy(vertices, aeslist: np.ndarray):
     # innervertices = the tensor we are trying to optimize, holding the coordinates of the innervertices
     # allvertices = all of the vertices in the Graph
     # innervertexindices = a list that holds the indices of the innervertices tensor within the allvertices array (aka the actual indices of the inner vertices within the graph)
-    # aeslist = list where each row corresponds to one inner edge (i,j) and its adjacent faces with format [i, l, j, k]
+    # aeslist = list where each row corresponds to one inner edge (i,j) and its adjacent faces with format [i, k, j, l]
     '''
     
     i = vertices[:,aeslist[:,0]]
@@ -80,7 +80,7 @@ def AESallvertexenergy(vertices, aeslist: np.ndarray):
 
     # graphy = torchviz.make_dot(energy, params={v: k for v, k in enumerate(list(innervertices))})
     # graphy.render("AEStree", format="png")
-    return torch.sum(energiez ** 2)
+    return energy
 
 
 def AESedgeenergy(edges, aeslist: np.ndarray):
@@ -88,25 +88,25 @@ def AESedgeenergy(edges, aeslist: np.ndarray):
 
     # Input Variables:
     # edges: Edgevariable (probably tensor) on which this runs 
-    # aeslist = list where each row corresponds to one inner edge (i,j) and its adjacent faces with format [i, l, j, k]
+    # aeslist = list where each row corresponds to one inner edge (i,j) and its adjacent faces with format [i, k, j, l]
 
     TODO: not sure how to implement this. Gotta figure out how to avoid confusion on the matrix, whether [i,j] or [j,i] gets changed. 
     Current idea: [i,j] and i is always the smaller one 
     '''
     
-    i = vertices[:,aeslist[:,0]]
-    k = vertices[:,aeslist[:,1]]
-    j = vertices[:,aeslist[:,2]]
-    l = vertices[:,aeslist[:,3]]
+    ik = edges[min(aeslist[:,0],aeslist[:,1]),max(aeslist[:,0],aeslist[:,1])]
+    kj = edges[min(aeslist[:,1],aeslist[:,2]),max(aeslist[:,1],aeslist[:,2])]
+    jl = edges[min(aeslist[:,2],aeslist[:,3]),max(aeslist[:,2],aeslist[:,3])]
+    li = edges[min(aeslist[:,3],aeslist[:,0]),max(aeslist[:,3],aeslist[:,0])]
 
     #energy for each inner edge = (|ik| - |kj| + |jl| - |li|) ^ 2
-    energiez = (torch.linalg.norm(k-i, dim=0) - torch.linalg.norm(j-k, dim=0) + torch.linalg.norm(l-j, dim=0) - torch.linalg.norm(i-l, dim=0))
+    energiez = (ik - kj + jl - li)
     
     energy = torch.sum(energiez ** 2)
 
     # graphy = torchviz.make_dot(energy, params={v: k for v, k in enumerate(list(innervertices))})
     # graphy.render("AEStree", format="png")
-    return torch.sum(energiez ** 2)
+    return energy
 
 
 def outeredgefixer(curedgelengths, goallengths):

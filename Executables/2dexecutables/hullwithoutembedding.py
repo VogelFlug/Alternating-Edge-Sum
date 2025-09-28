@@ -5,13 +5,16 @@ import sys
 sys.path.insert(0, 'C:/Users/ich/Desktop/Uni/Alternating-Edge-Sum')
 
 from main import main
-from classes.TwoDGraph import TwoDGraph
+from util.TwoDGraph import TwoDGraph
 from scipy.spatial import Delaunay
 
 filepath = "data/2dfolder/onlyhulls/basichull.txt"
 
 attempts = 1
 stepsize = 4000
+
+#number of random graphs you wanna generate this way
+tries = 1
 
 def creategraphfromhull(hull: np.ndarray, nrinsides: int):
     #Step one: create random number of vertices on the inside, done via dirichlet distribution (Idk either) and barycentric coordinates of the hull
@@ -48,15 +51,15 @@ if __name__ == '__main__':
 
     #get hull vertices, should have format x1 y1\n x2 y2 etc.
     vertices = np.loadtxt(filepath, delimiter = " ")
+    for i in range (tries):
+        seed = int(200 * np.random.rand())
+        np.random.seed(seed)
+        nrinsides = int(2 + 6*np.random.rand())
 
-    seed = int(200 * np.random.rand())
-    np.random.seed(seed)
-    nrinsides = int(2 + 6*np.random.rand())
+        randomized_graph, shuffleseed = creategraphfromhull(vertices, nrinsides)
 
-    randomized_graph, shuffleseed = creategraphfromhull(vertices, nrinsides)
-
-    #for naming convention, I will use the state of the random numpy generator that generates our graph
-    main(randomized_graph, "output/2dfolder/hullwithoutembedding" + filepath[23:-4] + "_" + str(seed) + "_" + str(shuffleseed), attempts, stepsize)
+        #for naming convention, I will use the state of the random numpy generator that generates our graph
+        main(randomized_graph, "output/2dfolder/hullwithoutembedding" + filepath[23:-4] + "_" + str(seed) + "_" + str(shuffleseed), attempts, stepsize)
 
 
 
