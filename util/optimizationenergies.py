@@ -93,11 +93,10 @@ def AESedgeenergy(edges, aeslist: np.ndarray):
     TODO: not sure how to implement this. Gotta figure out how to avoid confusion on the matrix, whether [i,j] or [j,i] gets changed. 
     Current idea: [i,j] and i is always the smaller one 
     '''
-    
-    ik = edges[min(aeslist[:,0],aeslist[:,1]),max(aeslist[:,0],aeslist[:,1])]
-    kj = edges[min(aeslist[:,1],aeslist[:,2]),max(aeslist[:,1],aeslist[:,2])]
-    jl = edges[min(aeslist[:,2],aeslist[:,3]),max(aeslist[:,2],aeslist[:,3])]
-    li = edges[min(aeslist[:,3],aeslist[:,0]),max(aeslist[:,3],aeslist[:,0])]
+    ik = edges[np.minimum(aeslist[:,0],aeslist[:,1]),np.maximum(aeslist[:,0],aeslist[:,1])]
+    kj = edges[np.minimum(aeslist[:,1],aeslist[:,2]),np.maximum(aeslist[:,1],aeslist[:,2])]
+    jl = edges[np.minimum(aeslist[:,2],aeslist[:,3]),np.maximum(aeslist[:,2],aeslist[:,3])]
+    li = edges[np.minimum(aeslist[:,3],aeslist[:,0]),np.maximum(aeslist[:,3],aeslist[:,0])]
 
     #energy for each inner edge = (|ik| - |kj| + |jl| - |li|) ^ 2
     energiez = (ik - kj + jl - li)
@@ -109,18 +108,19 @@ def AESedgeenergy(edges, aeslist: np.ndarray):
     return energy
 
 
-def outeredgefixer(curedgelengths, goallengths):
+def edgefixer(curredgelengths, goallengths):
     '''It is rather difficult to fix the outer edge lengths, which we wish to use as constants to prevent our graphs from collapsing
     This function serves as a punishment on the outer edge lengths, to "softly" prevent the graph collapse without actually fixing the outer edges
+    We also use the function to reconstruct a graph from the appropriate edgelengths, cause fuck it we ball
 
     # Input Variables:
-    # curedgelengths = our current outer edge lengths
-    # edgelengths = column vector of size oe holding the lengths we want the outer edges to be. 
+    # curedgelengths = our current edge lengths
+    # edgelengths = column vector holding the lengths we want the edges to be. 
 
     # Output:
-    # energy that represents how different the outeredge lengths are from their "goal lengths"
+    # energy that represents how different the edge lengths are from their "goal lengths"
     '''
-    return torch.sum((goallengths - curedgelengths)**2)
+    return torch.sum((goallengths - curredgelengths)**2)
 
 
 

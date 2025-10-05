@@ -96,7 +96,7 @@ def gradientAESflexibleedges(Graph: TwoDGraph, learnrate: float, loops: int):
         curedgelengths = torch.linalg.norm(tmpedgevectors, axis = 0)
 
         # calculate energy 
-        energy = optimizers.outeredgefixer(curedgelengths, edgelengths) + optimizers.AESallvertexenergy(Verttensor, AESlist)
+        energy = optimizers.edgefixer(curedgelengths, edgelengths) + optimizers.AESallvertexenergy(Verttensor, AESlist)
         energies.append(energy.item())
         #print(energy)
         
@@ -121,7 +121,7 @@ def gradientAESflexibleedges(Graph: TwoDGraph, learnrate: float, loops: int):
 
 def gradientAESoptimizeedges(Graph: TwoDGraph, learnrate: float, loops: int):
     '''We now optimize the edgelengths directly, rather than optimizing the vertices first. 
-    TODO: figure out a way to reconstruct the graph, for now i will implement that with another optimization
+    TODO: Debug
     '''
     vertices = Graph.vertices
     oe = np.array(list(gutil.getouteredges(Graph.edgecounter)))
@@ -148,7 +148,7 @@ def gradientAESoptimizeedges(Graph: TwoDGraph, learnrate: float, loops: int):
 
     for i in range(loops):
         # calc energy TODO: Rewrite AES energy to be based on just the edge lengths
-        energy = optimizers.outeredgefixer(edgetensor[oe[:,0],oe[:,1]], outeredgelengths) + optimizers.AESedgeenergy(edgetensor, AESlist)
+        energy = optimizers.edgefixer(edgetensor[oe[:,0],oe[:,1]], outeredgelengths) + optimizers.AESedgeenergy(edgetensor, AESlist)
         energies.append(energy.item())
         #print(energy)
         
@@ -163,11 +163,11 @@ def gradientAESoptimizeedges(Graph: TwoDGraph, learnrate: float, loops: int):
         # Reset Gradient
         edgetensor.grad.zero_() # type: ignore
     
-    edges = edge.detach().numpy()
-    # TODO: Implement another optimization that reconstructs the graph from the edges
+    edges = edgetensor.detach().numpy()
+    # TODO: Debug implementation from Graphutil
     
 
-    newGraph = TwoDGraph(vertices=vertexs, faces=Graph.faces)
+    newGraph, energized = gutil.reconstructfromedgelengths(Graph, edges)
     return newGraph, np.array(energies)
 
 
@@ -213,7 +213,7 @@ def main(Graph: TwoDGraph, outputpath: str, attempts = 1, stepsize = 2000):
 
     
     for i in range(1, 1 + attempts):
-        AESgraph, energies = gradientAESflexibleedges(Graph, 0.001, i * stepsize)
+        AESgraph, energies = gradientAESoptimizeedges(Graph, 0.001, i * stepsize)
 
         axs[i,0].set_title("AES minimized graph", fontsize = 7, y = -0.25)
         gutil.showGraph(AESgraph, axs[i,0])
@@ -232,4 +232,4 @@ def main(Graph: TwoDGraph, outputpath: str, attempts = 1, stepsize = 2000):
     # axs[2,1].text(1.1,0.5, "Final AES energy: " + str(format(Tutteenergies[-1], ".8f")), transform=axs[2,1].transAxes,  rotation = 270, va = "center", ha="center", fontsize=7)
 
     
-    plt.savefig(outputpath + "_outeredgefixertest.pdf")
+    plt.savefig(outputpath + "_edges_optimized.pdf")

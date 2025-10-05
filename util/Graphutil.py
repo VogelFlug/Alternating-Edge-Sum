@@ -1,7 +1,9 @@
 import numpy as np
+import torch
 from matplotlib import pyplot as plt
 from matplotlib.patches import Polygon
 from .TwoDGraph import TwoDGraph
+from .optimizationenergies import edgefixer
 
 #outer edges only appear once
 def getouteredges(edgecounter):
@@ -128,13 +130,52 @@ def standardtuttembedding(Graph: TwoDGraph):
     return newGraph
 
 
-def optimizefromedgelengths(Graph: TwoDGraph, edgelengths):
+def reconstructfromedgelengths(Graph: TwoDGraph, edgelengths, learnrate = 0.001):
     '''Reconstructs a Graph from edgelengths via optimization.
     
     # Input variables:
     # Graph = Graph with which to start the optimization, will probably just be the original graph.
-    # edgelengths = edgelengths we have generated, should be in the order outeredges-inneredges as returned by the functions at the top of this file
+    # edgelengths = edgelengths we have generated, will be in the form of a matrix where (i,j) needs to be the edgelength between i and j (otherwise zero) for all i<j
 
-    # Output: New Graph determined to be "close enough" to the original edgelengths
+    # Output: New Graph determined to be "close enough" to the goal edgelengths
     '''
-    return 
+    vertices = Graph.vertices
+    oe = np.array(list(getouteredges(Graph.edgecounter)))
+    ie = np.array(list(getinneredges(Graph.edgecounter)))
+
+
+    Verttensor = torch.tensor(vertices, requires_grad=True)
+    edges = np.concatenate((oe,ie))
+    #make the edges sorted so vertex one has lower index than vertex two. This is to make up for my scuffed implementation earlier
+    edges[:,0], edges[:,1] = np.minimum(edges[:,0],edges[:,1]), np.maximum(edges[:,0],edges[:,1])
+
+    #to remember the energies so we can plot them afterwards
+    energies = []
+    # Get the goallengths outside of the loop cause the stay consistent
+    goalleng = torch.tensor(edgelengths[edges[:,0], edges[:,1]], requires_grad=False)
+
+    for i in range(4000):
+        # First get a vector holding our current edgelengths:
+        curredgeleng = torch.linalg.norm(Verttensor[:,edges[:,0]]-Verttensor[:,edges[:, 1]], dim=0)
+
+
+        # get the energy
+        energy = edgefixer(curredgeleng,goalleng)
+        energies.append(energy.item())
+        #print(energy)
+        
+        # get gradient through backpropagation
+        energy.backward()
+        
+
+        with torch.no_grad():
+            Verttensor -= learnrate * Verttensor.grad # type: ignore
+
+        #print(Xtensor)
+        # reset Gradient
+        Verttensor.grad.zero_() # type: ignore
+    
+    vertexs = Verttensor.detach().numpy()
+
+    newGraph = TwoDGraph(vertices=vertexs, faces=Graph.faces)
+    return newGraph, np.array(energies)
