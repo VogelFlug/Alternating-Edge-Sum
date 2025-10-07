@@ -14,7 +14,7 @@ attempts = 1
 stepsize = 4000
 
 #number of random graphs you wanna generate this way
-tries = 1
+tries = 3
 
 def creategraphfromhull(hull: np.ndarray, nrinsides: int):
     #Step one: create random number of vertices on the inside, done via dirichlet distribution (Idk either) and barycentric coordinates of the hull

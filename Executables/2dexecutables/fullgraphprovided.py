@@ -8,7 +8,7 @@ from util.TwoDGraph import TwoDGraph
 
 filepath = "data/2dfolder/fulldata/basicexample.txt"
 attempts = 1
-stepsize = 2000
+stepsize = 10000
 
 if __name__ == '__main__':
     # if(len(sys.argv)<2):

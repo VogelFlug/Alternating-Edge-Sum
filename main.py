@@ -46,16 +46,13 @@ def gradientAESfixedvertices(Graph: TwoDGraph, learnrate: float, loops: int):
         #calc energy
         energy = optimizers.AESinnervertexenergy(Verttensor, vertices, iv, AESlist)
         energies.append(energy.item())
-        #print(energy)
         
         # get gradient through backpropagation
-        energy.backward()
-        
+        energy.backward()  
 
         with torch.no_grad():
             Verttensor -= learnrate * Verttensor.grad # type: ignore
 
-        #print(Xtensor)
         # reset Gradient
         Verttensor.grad.zero_() # type: ignore
     
@@ -98,22 +95,19 @@ def gradientAESflexibleedges(Graph: TwoDGraph, learnrate: float, loops: int):
         # calculate energy 
         energy = optimizers.edgefixer(curedgelengths, edgelengths) + optimizers.AESallvertexenergy(Verttensor, AESlist)
         energies.append(energy.item())
-        #print(energy)
         
         # get gradient through backpropagation
         energy.backward()
-        
-
+    
         with torch.no_grad():
             Verttensor -= learnrate * Verttensor.grad # type: ignore
 
-        #print(Xtensor)
         # Reset Gradient
         Verttensor.grad.zero_() # type: ignore
     
+
     vertexs = Verttensor.detach().numpy()
     
-
     newGraph = TwoDGraph(vertices=vertexs, faces=Graph.faces)
     return newGraph, np.array(energies)
 
@@ -121,6 +115,9 @@ def gradientAESflexibleedges(Graph: TwoDGraph, learnrate: float, loops: int):
 
 def gradientAESoptimizeedges(Graph: TwoDGraph, learnrate: float, loops: int):
     '''We now optimize the edgelengths directly, rather than optimizing the vertices first. 
+    
+    This also introduces a second optimization in Graphutil which attempts to reconstruct the new graph from its edgelengths. Thus a second energy from that function is returned
+    For further explanation, read the documentation for util.Graphutil.reconstructfromedgelengths
     TODO: Debug
     '''
     vertices = Graph.vertices
@@ -132,9 +129,8 @@ def gradientAESoptimizeedges(Graph: TwoDGraph, learnrate: float, loops: int):
     outeredgevectors = vertices[:,oe[:,1]] - vertices[:,oe[:,0]]
     outeredgelengths = torch.tensor(np.linalg.norm(outeredgevectors, axis = 0), requires_grad = False)
 
-    # rather than a vector we optimzie, for purposes of efficiency we introduce a matrix over all vertices that notes the edgelength 
-    # between vertices i and j in the cell (i,j). Other cells will be left as 0. If this can be done more efficiently than a for loop, that'd be pretty sick
-    # TODO: investigate if having this be a matrix with a bunch of 0 values causes problems?
+    # rather than a vector we optimize, for purposes of efficiency we introduce a matrix over all vertices that notes the edgelength between
+    # vertices i and j in the cell (i,j). Other cells will be left as 0. If this can be done more efficiently than a for loop, that'd be pretty sick
     edgematrix = np.zeros((vertices.shape[1], vertices.shape[1]))
     for edge in alledges:
         edgematrix[edge[0],edge[1]] = edgematrix[edge[1],edge[0]] = np.linalg.norm(vertices[:,edge[1]] - vertices[:,edge[0]])
@@ -147,33 +143,27 @@ def gradientAESoptimizeedges(Graph: TwoDGraph, learnrate: float, loops: int):
     energies = []
 
     for i in range(loops):
-        # calc energy TODO: Rewrite AES energy to be based on just the edge lengths
+        # calc energy 
         energy = optimizers.edgefixer(edgetensor[oe[:,0],oe[:,1]], outeredgelengths) + optimizers.AESedgeenergy(edgetensor, AESlist)
         energies.append(energy.item())
-        #print(energy)
         
         # get gradient through backpropagation
         energy.backward()
-        
 
         with torch.no_grad():
             edgetensor -= learnrate * edgetensor.grad # type: ignore
 
-        #print(Xtensor)
         # Reset Gradient
         edgetensor.grad.zero_() # type: ignore
     
     edges = edgetensor.detach().numpy()
     # TODO: Debug implementation from Graphutil
-    
 
     newGraph, energized = gutil.reconstructfromedgelengths(Graph, edges)
-    return newGraph, np.array(energies)
+    return newGraph, np.array(energies), energized
 
 
 
-
-# TODO: maybe introduce a function that fully fixes the outer edge lengths?
 
 
 
@@ -193,7 +183,7 @@ def main(Graph: TwoDGraph, outputpath: str, attempts = 1, stepsize = 2000):
     # Output:
     # The pdf. Thas it for now
     
-    # TODO: Find a way to show the x axes for lots of attempts?
+    # TODO: Find a way to adjust the aspect ratio
     '''
 
 
@@ -205,7 +195,7 @@ def main(Graph: TwoDGraph, outputpath: str, attempts = 1, stepsize = 2000):
     axs[0,0].set_title("Original Graph", fontsize = 7)
     gutil.showGraph(Graph, axs[0,0])
 
-    #plot the Tutte Embedding of the original Graph and add the AES value to the side (only 6 decimal points cause otherwise it will get very messy)
+    # plot the Tutte Embedding of the original Graph and add the AES value to the side (only 6 decimal points cause otherwise it will get very messy)
     axs[0,1].set_title("Tutte Embedding", fontsize = 7)
     TutteGraph = gutil.standardtuttembedding(Graph)
     gutil.showGraph(TutteGraph, axs[0,1])
@@ -213,7 +203,7 @@ def main(Graph: TwoDGraph, outputpath: str, attempts = 1, stepsize = 2000):
 
     
     for i in range(1, 1 + attempts):
-        AESgraph, energies = gradientAESoptimizeedges(Graph, 0.001, i * stepsize)
+        AESgraph, energies, energized = gradientAESoptimizeedges(Graph, 0.001, i * stepsize)
 
         axs[i,0].set_title("AES minimized graph", fontsize = 7, y = -0.25)
         gutil.showGraph(AESgraph, axs[i,0])
@@ -221,6 +211,7 @@ def main(Graph: TwoDGraph, outputpath: str, attempts = 1, stepsize = 2000):
         axs[i,1].set_title("AES energy over optimization",fontsize = 7, y = -0.25)
         axs[i,1].plot(energies)
         axs[i,1].text(1.1,0.5, " Final AES\n  energy:\n     " + str(format(energies[-1], ".8f")), transform=axs[i,1].transAxes,  rotation = 0, va = "center", ha="center", fontsize=7)
+
 
     # TutteAES, Tutteenergies = gradientAES(TutteGraph, 0.001)
     

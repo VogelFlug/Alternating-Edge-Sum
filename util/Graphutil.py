@@ -2,8 +2,10 @@ import numpy as np
 import torch
 from matplotlib import pyplot as plt
 from matplotlib.patches import Polygon
-from .TwoDGraph import TwoDGraph
-from .optimizationenergies import edgefixer
+import sys
+sys.path.insert(0, 'C:/Users/ich/Desktop/Uni/Alternating-Edge-Sum')
+
+from util.TwoDGraph import TwoDGraph
 
 #outer edges only appear once
 def getouteredges(edgecounter):
@@ -138,6 +140,8 @@ def reconstructfromedgelengths(Graph: TwoDGraph, edgelengths, learnrate = 0.001)
     # edgelengths = edgelengths we have generated, will be in the form of a matrix where (i,j) needs to be the edgelength between i and j (otherwise zero) for all i<j
 
     # Output: New Graph determined to be "close enough" to the goal edgelengths
+
+    TODO: why does this struggle to reconstruct some of the graphs?
     '''
     vertices = Graph.vertices
     oe = np.array(list(getouteredges(Graph.edgecounter)))
@@ -148,21 +152,19 @@ def reconstructfromedgelengths(Graph: TwoDGraph, edgelengths, learnrate = 0.001)
     edges = np.concatenate((oe,ie))
     #make the edges sorted so vertex one has lower index than vertex two. This is to make up for my scuffed implementation earlier
     edges[:,0], edges[:,1] = np.minimum(edges[:,0],edges[:,1]), np.maximum(edges[:,0],edges[:,1])
-
     #to remember the energies so we can plot them afterwards
     energies = []
-    # Get the goallengths outside of the loop cause the stay consistent
+    # Get the goallengths outside of the loop cause they stay consistent
     goalleng = torch.tensor(edgelengths[edges[:,0], edges[:,1]], requires_grad=False)
 
-    for i in range(4000):
+    for i in range(2000):
         # First get a vector holding our current edgelengths:
         curredgeleng = torch.linalg.norm(Verttensor[:,edges[:,0]]-Verttensor[:,edges[:, 1]], dim=0)
 
 
         # get the energy
-        energy = edgefixer(curredgeleng,goalleng)
+        energy = torch.sum((goalleng - curredgeleng)**2)
         energies.append(energy.item())
-        #print(energy)
         
         # get gradient through backpropagation
         energy.backward()
@@ -171,11 +173,21 @@ def reconstructfromedgelengths(Graph: TwoDGraph, edgelengths, learnrate = 0.001)
         with torch.no_grad():
             Verttensor -= learnrate * Verttensor.grad # type: ignore
 
-        #print(Xtensor)
         # reset Gradient
         Verttensor.grad.zero_() # type: ignore
-    
+        
     vertexs = Verttensor.detach().numpy()
-
     newGraph = TwoDGraph(vertices=vertexs, faces=Graph.faces)
     return newGraph, np.array(energies)
+
+
+'''for testing purposes'''
+# filepath = "data/2dfolder/fulldata/megabasicoff.txt"
+# edges = np.array([[0,1,1,0, 0.707106781186],[1, 0, 0, 1, 0.707106781186],[1,0,0,1, 0.707106781186],[0,1,1,0, 0.707106781186],[0.707106781186,0.707106781186,0.707106781186,0.707106781186,0]])
+
+# data = ""
+# with open(filepath , "r") as f:
+#     data = f.read()
+# Graph = TwoDGraph(vgl = data)
+
+# reconstructfromedgelengths(Graph, edges)

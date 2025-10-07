@@ -2,17 +2,20 @@
 import numpy as np
 import torch
 
-from . import Graphutil as gutil
-from .TwoDGraph import TwoDGraph
+import sys
+sys.path.insert(0, 'C:/Users/ich/Desktop/Uni/Alternating-Edge-Sum')
+
+import util.Graphutil
+from util.TwoDGraph import TwoDGraph
 
 def SnapshotAES(Graph: TwoDGraph):
     '''Calculates the AES energy for a given graph, Might be scuffed since implementation is copied from regular AESenergy. 
     This had a TODO: fix statement on it that i never removed, so there might be something wrong with it
     '''
 
-    ie = gutil.getinneredges(Graph.edgecounter)
+    ie = util.Graphutil.getinneredges(Graph.edgecounter)
 
-    aeslist = gutil.getAESList(Graph, ie)
+    aeslist = util.Graphutil.getAESList(Graph, ie)
     fullvertex = Graph.vertices
     
     i = fullvertex[:,aeslist[:,0]]
