@@ -180,14 +180,96 @@ def reconstructfromedgelengths(Graph: TwoDGraph, edgelengths, learnrate = 0.001)
     newGraph = TwoDGraph(vertices=vertexs, faces=Graph.faces)
     return newGraph, np.array(energies)
 
+def newreconstructfromedgelengths(faces, edgelengths, dimensions = 2):
+    '''Reconstructs a Graph from edgelengths by recreating the triangles one by one. We create the first face manually and from there attach the surrounding ones one by one
+    
+    # Input variables:
+    # faces = a list of all the faces of the Graph, of type list[int,int,int]
+    # edgelengths = edgelengths we have generated, will be in the form of a matrix where (i,j) needs to be the edgelength between i and j (otherwise zero) for all i,j. if i had to be smaller than j, this would just be painful
+    # dimensions = just in case i wanna keep this function for 3 dimensions
+
+    # Output: New Graph with those edgelengths
+
+    TODO: BIG DEBUGGING JOB TO BE DONE, THIS DOESNT WORK
+    '''
+    facequeue = faces.copy()
+    # we keep track of the vertices we have already determined
+    vertextracker = []
+    nr_vertices = edgelengths.shape[0]
+    newvertices = np.zeros((dimensions,nr_vertices))
+
+    # Hardforce first face. 
+    firstface = facequeue[0]
+    facequeue.remove(firstface)
+    i, j, k = firstface[0], firstface[1], firstface[2]  # type: ignore
+
+    # the first vertex gets put into the origin for simplicity's sake, the second one goes to the right of the first one. This will probably cause a big roto-translation of the original graph, but I don't exactly care
+    newvertices[:,i] = [0,0]
+    newvertices[:,j] = [edges[i,j],0]
+    print(newvertices)
+
+    # This is the hard part and the part we repeat in the loop: getting the third vertex position. The math for this has been done beforehand
+    # Its also where we split off between dimensionalities, as the first two vertices work just as well in 2 dimensions
+    if (dimensions == 2):
+        # get the point on IJ that is orthogonal to K
+        ratio = ((edges[i,k] ** 2) - (edges[j,k] ** 2) + (edges[i,j] ** 2)) / 2 * edges[i,j]
+        p = newvertices[:,i] + ratio/edges[i,j] * (newvertices[:,j] - newvertices[:,i])
+        height = np.sqrt((edges[i,k] ** 2) - (ratio ** 2))
+
+        # now we get K from P
+        x_k1, x_k2 = p[0] + height * ((newvertices[0,j] - newvertices[0,i]) / edges[i,j]), p[0] - height * ((newvertices[0,j] - newvertices[0,i]) / edges[i,j])
+        y_k1, y_k2 = p[1] - height * ((newvertices[1,j] - newvertices[1,i]) / edges[i,j]), p[1] + height * ((newvertices[1,j] - newvertices[1,i]) / edges[i,j])
+
+        # Lastly we check which point we want. One of these should produce a positive determinante
+        point1 = np.array([x_k1, y_k1])
+        determinante1 = np.linalg.det([newvertices[:,j] - newvertices[:,i], point1 - newvertices[:,i]])
+        if(determinante1 > 0):
+            newvertices[:,k] = point1
+        else:
+            newvertices[:,k] = np.array([x_k2, y_k2])
+
+        #we also add all the vertices to the tracker
+        vertextracker.append(i), vertextracker.append(j), vertextracker.append(k)
+
+        # Now we basically repeat what we did for k in the last step for all of the faces. If a face shares two vertices with ones we already have, we can work on that. Otherwise it is skipped for now
+        while(len(vertextracker) < nr_vertices):
+            for face in facequeue:
+                crossover = set(face).intersection(vertextracker)
+                if(len((set(face).intersection(vertextracker))) == 2): # type: ignore
+                    facequeue.remove(face)
+                    i, j, k = list(crossover)[0],list(crossover)[1], (set(face) - crossover).pop() # type: ignore
+
+                    # now we literally copy what we did above
+                    ratio = ((edges[i,k] ** 2) - (edges[j,k] ** 2) + (edges[i,j] ** 2)) / 2 * edges[i,j]
+                    p = newvertices[:,i] + ratio/edges[i,j] * (newvertices[:,j] - newvertices[:,i])
+                    height = np.sqrt((edges[i,k] ** 2) - (ratio ** 2))
+                    x_k1, x_k2 = p[0] + height * ((newvertices[0,j] - newvertices[0,i]) / edges[i,j]), p[0] - height * ((newvertices[0,j] - newvertices[0,i]) / edges[i,j])
+                    y_k1, y_k2 = p[1] - height * ((newvertices[1,j] - newvertices[1,i]) / edges[i,j]), p[1] + height * ((newvertices[1,j] - newvertices[1,i]) / edges[i,j])
+
+                    point1 = np.array([x_k1, y_k1])
+                    determinante1 = np.linalg.det([newvertices[:,j] - newvertices[:,i], point1 - newvertices[:,i]])
+                    if(determinante1 > 0):
+                        newvertices[:,k] = point1
+                    else:
+                        newvertices[:,k] = np.array([x_k2, y_k2])
+
+                    vertextracker.append(k)
+    newGraph = TwoDGraph(vertices=newvertices, faces=faces)
+    return newGraph
+
 
 '''for testing purposes'''
-# filepath = "data/2dfolder/fulldata/megabasicoff.txt"
-# edges = np.array([[0,1,1,0, 0.707106781186],[1, 0, 0, 1, 0.707106781186],[1,0,0,1, 0.707106781186],[0,1,1,0, 0.707106781186],[0.707106781186,0.707106781186,0.707106781186,0.707106781186,0]])
+filepath = "data/2dfolder/fulldata/megabasicoff.txt"
+edges = np.array([[0,1,1,0, 0.707106781186],[1, 0, 0, 1, 0.707106781186],[1,0,0,1, 0.707106781186],[0,1,1,0, 0.707106781186],[0.707106781186,0.707106781186,0.707106781186,0.707106781186,0]])
 
-# data = ""
-# with open(filepath , "r") as f:
-#     data = f.read()
-# Graph = TwoDGraph(vgl = data)
+data = ""
+with open(filepath , "r") as f:
+    data = f.read()
+Graph = TwoDGraph(vgl = data)
 
-# reconstructfromedgelengths(Graph, edges)
+newGraph = newreconstructfromedgelengths(list(Graph.faces), edges)
+
+
+fig, axs = plt.subplots()
+showGraph(newGraph, axs)
+plt.show()
