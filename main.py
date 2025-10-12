@@ -157,10 +157,11 @@ def gradientAESoptimizeedges(Graph: TwoDGraph, learnrate: float, loops: int):
         edgetensor.grad.zero_() # type: ignore
     
     edges = edgetensor.detach().numpy()
+    edges = np.triu(edges) + np.transpose(np.triu(edges))
     # TODO: Debug implementation from Graphutil
 
-    newGraph, energized = gutil.reconstructfromedgelengths(Graph, edges)
-    return newGraph, np.array(energies), energized
+    newGraph = gutil.newreconstructfromedgelengths(list(Graph.faces), edges)
+    return newGraph, np.array(energies)
 
 
 
@@ -203,7 +204,7 @@ def main(Graph: TwoDGraph, outputpath: str, attempts = 1, stepsize = 2000):
 
     
     for i in range(1, 1 + attempts):
-        AESgraph, energies, energized = gradientAESoptimizeedges(Graph, 0.001, i * stepsize)
+        AESgraph, energies = gradientAESoptimizeedges(Graph, 0.001, i * stepsize)
 
         axs[i,0].set_title("AES minimized graph", fontsize = 7, y = -0.25)
         gutil.showGraph(AESgraph, axs[i,0])

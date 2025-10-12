@@ -6,7 +6,7 @@ sys.path.insert(0, 'C:/Users/ich/Desktop/Uni/Alternating-Edge-Sum')
 from main import main
 from util.TwoDGraph import TwoDGraph
 
-filepath = "data/2dfolder/fulldata/basicexample.txt"
+filepath = "data/2dfolder/fulldata/megabasic.txt"
 attempts = 1
 stepsize = 10000
 
