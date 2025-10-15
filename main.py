@@ -149,12 +149,7 @@ def gradientAESoptimizeedges(Graph: TwoDGraph, learnrate: float, loops: int):
         # softouteredgeenergy = 10*optimizers.edgefixer(edgetensor[oe[:,0],oe[:,1]], outeredgelengths)
         # conditionenergies.append(softouteredgeenergy.item())
 
-        # Attempt to constraint some of the values manually
-
-        tensortocheck = torch.tensor(edgetensor.tolist(), requires_grad=False)
-        tensortocheck[oe[:,0],oe[:,1]] = outeredgelengths
-
-        aesenergy = optimizers.AESedgeenergy(tensortocheck, AESlist)
+        aesenergy = optimizers.AESedgeenergy(edgetensor, AESlist)
         energies.append(aesenergy.item())
         
         fullenergy = aesenergy #+ softouteredgeenergy
@@ -162,6 +157,7 @@ def gradientAESoptimizeedges(Graph: TwoDGraph, learnrate: float, loops: int):
         fullenergy.backward()
 
         with torch.no_grad():
+            edgetensor.grad[oe[:,0],oe[:,1]] = 0.0 # type: ignore
             edgetensor -= learnrate * edgetensor.grad # type: ignore
             #edgetensor[oe[:,0],oe[:,1]] = outeredgelengths
 
