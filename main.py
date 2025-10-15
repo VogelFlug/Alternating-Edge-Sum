@@ -140,28 +140,41 @@ def gradientAESoptimizeedges(Graph: TwoDGraph, learnrate: float, loops: int):
     AESlist = gutil.getAESList(Graph, ie)
 
     #to remember the energies so we can plot them afterwards
+    conditionenergies = []
     energies = []
+
 
     for i in range(loops):
         # calc energy 
-        energy = optimizers.edgefixer(edgetensor[oe[:,0],oe[:,1]], outeredgelengths) + optimizers.AESedgeenergy(edgetensor, AESlist)
-        energies.append(energy.item())
+        # softouteredgeenergy = 10*optimizers.edgefixer(edgetensor[oe[:,0],oe[:,1]], outeredgelengths)
+        # conditionenergies.append(softouteredgeenergy.item())
+
+        # Attempt to constraint some of the values manually
+
+        tensortocheck = torch.tensor(edgetensor.tolist(), requires_grad=False)
+        tensortocheck[oe[:,0],oe[:,1]] = outeredgelengths
+
+        aesenergy = optimizers.AESedgeenergy(tensortocheck, AESlist)
+        energies.append(aesenergy.item())
         
+        fullenergy = aesenergy #+ softouteredgeenergy
         # get gradient through backpropagation
-        energy.backward()
+        fullenergy.backward()
 
         with torch.no_grad():
             edgetensor -= learnrate * edgetensor.grad # type: ignore
+            #edgetensor[oe[:,0],oe[:,1]] = outeredgelengths
+
+        torch.abs(edgetensor)
 
         # Reset Gradient
         edgetensor.grad.zero_() # type: ignore
-    
     edges = edgetensor.detach().numpy()
     edges = np.triu(edges) + np.transpose(np.triu(edges))
-    # TODO: Debug implementation from Graphutil
+    print(edges)
 
     newGraph = gutil.newreconstructfromedgelengths(list(Graph.faces), edges)
-    return newGraph, np.array(energies)
+    return newGraph, np.array(energies), np.array(conditionenergies)
 
 
 
@@ -204,12 +217,17 @@ def main(Graph: TwoDGraph, outputpath: str, attempts = 1, stepsize = 2000):
 
     
     for i in range(1, 1 + attempts):
-        AESgraph, energies = gradientAESoptimizeedges(Graph, 0.001, i * stepsize)
+        AESgraph, energies, outeredenergies = gradientAESoptimizeedges(Graph, 0.01, i * stepsize)
+
+        #axs[i,0].set_title("Soft conditions over optimization",fontsize = 7, y = -0.25)
+        #print(outeredenergies[-1])
+
+        axs[i,0].text(1.1,0.5, " Final AES\n  energy:\n     " + str(format(energies[-1], ".8f")), transform=axs[i,1].transAxes,  rotation = 0, va = "center", ha="center", fontsize=7)
 
         axs[i,0].set_title("AES minimized graph", fontsize = 7, y = -0.25)
         gutil.showGraph(AESgraph, axs[i,0])
 
-        axs[i,1].set_title("AES energy over optimization",fontsize = 7, y = -0.25)
+        axs[i,1].set_title("outer energy over optimization",fontsize = 7, y = -0.25)
         axs[i,1].plot(energies)
         axs[i,1].text(1.1,0.5, " Final AES\n  energy:\n     " + str(format(energies[-1], ".8f")), transform=axs[i,1].transAxes,  rotation = 0, va = "center", ha="center", fontsize=7)
 

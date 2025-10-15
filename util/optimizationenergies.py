@@ -96,10 +96,10 @@ def AESedgeenergy(edges, aeslist: np.ndarray):
     TODO: not sure how to implement this. Gotta figure out how to avoid confusion on the matrix, whether [i,j] or [j,i] gets changed. 
     Current idea: [i,j] and i is always the smaller one 
     '''
-    ik = edges[np.minimum(aeslist[:,0],aeslist[:,1]),np.maximum(aeslist[:,0],aeslist[:,1])]
-    kj = edges[np.minimum(aeslist[:,1],aeslist[:,2]),np.maximum(aeslist[:,1],aeslist[:,2])]
-    jl = edges[np.minimum(aeslist[:,2],aeslist[:,3]),np.maximum(aeslist[:,2],aeslist[:,3])]
-    li = edges[np.minimum(aeslist[:,3],aeslist[:,0]),np.maximum(aeslist[:,3],aeslist[:,0])]
+    ik = torch.abs(edges[np.minimum(aeslist[:,0],aeslist[:,1]),np.maximum(aeslist[:,0],aeslist[:,1])])
+    kj = torch.abs(edges[np.minimum(aeslist[:,1],aeslist[:,2]),np.maximum(aeslist[:,1],aeslist[:,2])])
+    jl = torch.abs(edges[np.minimum(aeslist[:,2],aeslist[:,3]),np.maximum(aeslist[:,2],aeslist[:,3])])
+    li = torch.abs(edges[np.minimum(aeslist[:,3],aeslist[:,0]),np.maximum(aeslist[:,3],aeslist[:,0])])
 
     #energy for each inner edge = (|ik| - |kj| + |jl| - |li|) ^ 2
     energiez = (ik - kj + jl - li)
