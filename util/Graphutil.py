@@ -270,8 +270,33 @@ def newreconstructfromedgelengths(faces, edgelengths, dimensions = 2):
     return newGraph
 
 
+def spherepacker(Graph: TwoDGraph, edges : np.ndarray, edgelengths, dimensions = 2):
+    '''Given a graph where sphere packing is possible (we check for the AES being zero to verify), this function serves to calculate the radius of the sphere for each vertex that would make this packing possible.
+    The Matrix simply adds the two respective radii to sum up to the edgelength.
+    TODO: Furhter implement a visualization of the spheres
+
+    # Input Variables: TODO
+
+    # Output:
+    # array of size |V|, that gives the radius for a vertex at the respective index
+    '''
+    vertices = Graph.vertices
+    edgenr = edges.shape[0]
+
+    # The connectivity matrix has one row per edge and that row is entirely 0 except for the two vertices that make that edge
+    # The edgevector just holds the respective edge length
+    connectivity = np.zeros((edgenr,vertices.shape[1]))
+    edgevector = np.zeros((edgenr,1))
+    for i in range(edgenr):
+        connectivity[i, edges[:,i]] = 1
+        edgevector[i] = edgelengths[edges[i]]
+
+    radii = np.linalg.solve(connectivity, edgevector)
+    return radii
+
+
 '''for testing purposes'''
-# filepath = "data/2dfolder/fulldata/megabasicoff.txt"
+# filepath = "data/2dfolder/fulldata/testfile.txt"
 # edges = np.array([[0,1,1,0, 0.707106781186],[1, 0, 0, 1, 0.707106781186],[1,0,0,1, 0.707106781186],[0,1,1,0, 0.707106781186],[0.707106781186,0.707106781186,0.707106781186,0.707106781186,0]])
 
 # data = ""
