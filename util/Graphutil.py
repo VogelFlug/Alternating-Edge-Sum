@@ -335,12 +335,12 @@ for i,j in edges:
 
 
 radii = spherepacker(Graph, edges, edgelengths)
-
+print(radii)
 
 #newGraph = newreconstructfromedgelengths(list(Graph.faces), edges)
 
 
-fig, axs = plt.subplots()
-showGraph(Graph, axs)
-visualizecircles(Graph.vertices, radii, axs)
-plt.show()
+# fig, axs = plt.subplots()
+# showGraph(Graph, axs)
+# visualizecircles(Graph.vertices, radii, axs)
+# plt.show()
