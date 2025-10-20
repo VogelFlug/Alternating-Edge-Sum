@@ -6,6 +6,7 @@ import copy
 
 import sys
 sys.path.insert(0, 'C:/Users/ich/Desktop/Uni/Alternating-Edge-Sum')
+sys.path.insert(0, 'C:/Users/daveb/OneDrive/Desktop/Uni/Alternating-Edge-Sum/')
 
 from util.TwoDGraph import TwoDGraph
 
@@ -270,12 +271,15 @@ def newreconstructfromedgelengths(faces, edgelengths, dimensions = 2):
     return newGraph
 
 
-def spherepacker(Graph: TwoDGraph, edges : np.ndarray, edgelengths, dimensions = 2):
-    '''Given a graph where sphere packing is possible (we check for the AES being zero to verify), this function serves to calculate the radius of the sphere for each vertex that would make this packing possible.
+def spherepacker(Graph: TwoDGraph, edges, edgelengths, dimensions = 2):
+    '''Given a graph G = (V,E) where sphere packing is possible (we check for the AES being zero to verify), this function serves to calculate the radius of the sphere for each vertex that would make this packing possible.
     The Matrix simply adds the two respective radii to sum up to the edgelength.
     TODO: Furhter implement a visualization of the spheres
 
-    # Input Variables: TODO
+    # Input Variables: 
+    # edges = E x 2 array, with all the edges in form (i,j) where i and j are the connected vertices
+    # edgelengths = edgelengths we have generated, will be in the form of a matrix where (i,j) needs to be the edgelength between i and j (otherwise zero) for all i,j. if i had to be smaller than j, this would just be painful
+    # dimensions = Currently only supports 2 dimensions TODO: implement 3
 
     # Output:
     # array of size |V|, that gives the radius for a vertex at the respective index
@@ -288,25 +292,55 @@ def spherepacker(Graph: TwoDGraph, edges : np.ndarray, edgelengths, dimensions =
     connectivity = np.zeros((edgenr,vertices.shape[1]))
     edgevector = np.zeros((edgenr,1))
     for i in range(edgenr):
-        connectivity[i, edges[:,i]] = 1
-        edgevector[i] = edgelengths[edges[i]]
+        connectivity[i, edges[i,0]] = connectivity[i, edges[i,1]] = 1
+        edgevector[i] = edgelengths[edges[i,0], edges[i,1]]
 
-    radii = np.linalg.solve(connectivity, edgevector)
+    radii = np.squeeze(np.linalg.lstsq(connectivity, edgevector)[0])
     return radii
+
+def visualizecircles(vertices, radii, subplot):
+    '''Draw the circle with given radius at the position of the vertex of the same index
+    '''
+    for i in range(radii.shape[0]):
+        circle = plt.Circle(vertices[:,i], radii[i])
+        subplot.add_patch(circle)
+
+    subplot.axis('equal')
+
+
+
+
+
+
+
+
+
 
 
 '''for testing purposes'''
-# filepath = "data/2dfolder/fulldata/testfile.txt"
-# edges = np.array([[0,1,1,0, 0.707106781186],[1, 0, 0, 1, 0.707106781186],[1,0,0,1, 0.707106781186],[0,1,1,0, 0.707106781186],[0.707106781186,0.707106781186,0.707106781186,0.707106781186,0]])
-
-# data = ""
-# with open(filepath , "r") as f:
-#     data = f.read()
-# Graph = TwoDGraph(vgl = data)
-
-# newGraph = newreconstructfromedgelengths(list(Graph.faces), edges)
+filepath = "data/2dfolder/fulldata/testfile.txt"
+#edges = np.array([[0,1,1,0, 0.707106781186],[1, 0, 0, 1, 0.707106781186],[1,0,0,1, 0.707106781186],[0,1,1,0, 0.707106781186],[0.707106781186,0.707106781186,0.707106781186,0.707106781186,0]])
 
 
-# fig, axs = plt.subplots()
-# showGraph(newGraph, axs)
-# plt.show()
+
+data = ""
+with open(filepath , "r") as f:
+    data = f.read()
+Graph = TwoDGraph(vgl = data)
+a, b = np.where(Graph.edgecounter != 0)
+edges = np.array([a,b]).T
+edgelengths = np.zeros((Graph.vertices.shape[1],Graph.vertices.shape[1]))
+for i,j in edges:
+    edgelengths[i,j] = edgelengths[j,i] = np.linalg.norm(Graph.vertices[:,i] - Graph.vertices[:,j])
+
+
+radii = spherepacker(Graph, edges, edgelengths)
+
+
+#newGraph = newreconstructfromedgelengths(list(Graph.faces), edges)
+
+
+fig, axs = plt.subplots()
+showGraph(Graph, axs)
+visualizecircles(Graph.vertices, radii, axs)
+plt.show()
