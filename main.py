@@ -69,7 +69,7 @@ def gradientAESfixedvertices(Graph: TwoDGraph, learnrate: float, loops: int):
 
 
 
-def gradientAESflexibleedges(Graph: TwoDGraph, learnrate: float, loops: int):
+def gradientAESflexibleedges(Graph: TwoDGraph, loops: int, learnrate = 0.01):
     '''Basically the function above but a penalization on the outer edge length rather than fixing the outer vertices themselves
     '''
     vertices = Graph.vertices
@@ -113,7 +113,7 @@ def gradientAESflexibleedges(Graph: TwoDGraph, learnrate: float, loops: int):
 
 
 
-def gradientAESoptimizeedges(Graph: TwoDGraph, learnrate: float, loops: int):
+def gradientAESoptimizeedges(Graph: TwoDGraph, loops: int, learnrate = 0.01):
     '''We now optimize the edgelengths directly, rather than optimizing the vertices first. 
     
     This also introduces a second optimization in Graphutil which attempts to reconstruct the new graph from its edgelengths. Thus a second energy from that function is returned
@@ -174,6 +174,59 @@ def gradientAESoptimizeedges(Graph: TwoDGraph, learnrate: float, loops: int):
 
 
 
+def optimizeviasvg(Graph: TwoDGraph, loops: int, learnrate = 0.01):
+    '''Once again we optimize the edge vectors to keep the problem quadratic. However, through the singular value decomposition of the connectivity matrix (as long as the graph has more edges than vertices),
+    we can find a matrix N describing the space to which our optimal solution of edgelengths should be orthogonal.
+
+    TODO 1: implement gradient descent
+    TODO 2: Investigate whether negative radii appear
+    TODO 3: Investigate what to do about it?
+
+    '''
+    vertices = Graph.vertices
+    edges = gutil.getalledges(Graph.edgecounter)
+
+    vertexnr = vertices.shape[1]
+    edgenr = edges.shape[0]
+
+    energies = []
+
+    # The connectivity matrix has one row per edge and that row is entirely 0 except for the two vertices that make that edge
+    connectivity = np.zeros((edgenr,vertexnr))
+    for i in range(edgenr):
+        connectivity[i, edges[i,0]] = connectivity[i, edges[i,1]] = 1
+
+    # Our problem can be broken down to connectivity @ radii = edges. Through singular value decomposition, we can find the core of the connectivity matrix, hidden in left singular vectors. 
+    LS, Sig, RS = np.linalg.svd(connectivity)
+    N = torch.tensor(LS[:,vertexnr:].T, requires_grad = False)
+    # print("right vectors: " , RS)
+    # print("Singular values: ", Sig)
+    # print("Full lefties:", LS)
+    # print("only lefties we want:", LS[:,vertexnr:])
+
+    # And now we get to the actual optimization. Since N is orthogonal to some fitting edgelengths in the question of connectivity @ radii = edges, we wish to achieve exactly that:
+    edgetensor = torch.tensor(np.linalg.norm(vertices[:,edges[:,0]] - vertices[:,edges[:,1]], axis = 0), requires_grad = True)    
+    for i in range(loops):
+        # energy in this case is just how close we are to orthogonality:
+        energy = torch.linalg.norm(N @ edgetensor)
+        energies.append(energy)
+    
+        energy.backward()
+
+        with torch.no_grad():
+            edgetensor -= learnrate * edgetensor.grad # type: ignore
+
+        # Reset Gradient
+        edgetensor.grad.zero_() # type: ignore
+    
+    edgelengths = edgetensor.detach().numpy()
+    # now we make the edgematrix that i've used for the last funcion cause it's easier for implementation (i think)
+    edgematrix = np.zeros((vertexnr, vertexnr))
+    for i in range(edgenr):
+        edgematrix[edges[i,0], edges[i,1]] = edgematrix[edges[i,1], edges[i,0]] = edgelengths[i]
+
+    newGraph = gutil.newreconstructfromedgelengths(list(Graph.faces), edges)
+    return newGraph, np.array(energies)
 
 
 
@@ -210,32 +263,24 @@ def main(Graph: TwoDGraph, outputpath: str, attempts = 1, stepsize = 2000):
     TutteGraph = gutil.standardtuttembedding(Graph)
     gutil.showGraph(TutteGraph, axs[0,1])
     axs[0,1].text(1.1,0.5, "    AES energy\n  for Tutte: \n     " + str(format(optimizers.SnapshotAES(TutteGraph),".8f")), transform=axs[0,1].transAxes,  rotation = 0, va = "center", ha="center", fontsize=7)
+    optimizeviasvg(Graph, stepsize, 0.01)
 
     
-    for i in range(1, 1 + attempts):
-        AESgraph, energies, outeredenergies = gradientAESoptimizeedges(Graph, 0.01, i * stepsize)
+    # for i in range(1, 1 + attempts):
+    #     AESgraph, energies, outeredenergies = gradientAESoptimizeedges(Graph, i * stepsize)
 
         #axs[i,0].set_title("Soft conditions over optimization",fontsize = 7, y = -0.25)
         #print(outeredenergies[-1])
 
-        axs[i,0].text(1.1,0.5, " Final AES\n  energy:\n     " + str(format(energies[-1], ".8f")), transform=axs[i,1].transAxes,  rotation = 0, va = "center", ha="center", fontsize=7)
+        # axs[i,0].text(1.1,0.5, " Final AES\n  energy:\n     " + str(format(energies[-1], ".8f")), transform=axs[i,1].transAxes,  rotation = 0, va = "center", ha="center", fontsize=7)
 
-        axs[i,0].set_title("AES minimized graph", fontsize = 7, y = -0.25)
-        gutil.showGraph(AESgraph, axs[i,0])
+        # axs[i,0].set_title("AES minimized graph", fontsize = 7, y = -0.25)
+        # gutil.showGraph(AESgraph, axs[i,0])
 
-        axs[i,1].set_title("outer energy over optimization",fontsize = 7, y = -0.25)
-        axs[i,1].plot(energies)
-        axs[i,1].text(1.1,0.5, " Final AES\n  energy:\n     " + str(format(energies[-1], ".8f")), transform=axs[i,1].transAxes,  rotation = 0, va = "center", ha="center", fontsize=7)
+        # axs[i,1].set_title("outer energy over optimization",fontsize = 7, y = -0.25)
+        # axs[i,1].plot(energies)
+        # axs[i,1].text(1.1,0.5, " Final AES\n  energy:\n     " + str(format(energies[-1], ".8f")), transform=axs[i,1].transAxes,  rotation = 0, va = "center", ha="center", fontsize=7)
 
-
-    # TutteAES, Tutteenergies = gradientAES(TutteGraph, 0.001)
-    
-    # axs[2,0].set_title("AES minimized graph starting with Tutte", fontsize = 7)
-    # util.showGraph(TutteAES, axs[2,0])
-
-    # axs[2,1].set_title("AES energy over optimization",fontsize = 7)
-    # axs[2,1].plot(Tutteenergies)
-    # axs[2,1].text(1.1,0.5, "Final AES energy: " + str(format(Tutteenergies[-1], ".8f")), transform=axs[2,1].transAxes,  rotation = 270, va = "center", ha="center", fontsize=7)
 
     
-    plt.savefig(outputpath + "_edges_optimized.pdf")
+    #plt.savefig(outputpath + "_edges_optimized.pdf")

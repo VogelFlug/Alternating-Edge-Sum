@@ -21,6 +21,10 @@ def getinneredges(edgecounter) -> set[tuple[int,int]]:
     a, b = np.where(edgecounter == 2)
     list = zip(a,b)
     return {tuple(sorted(pair)) for pair in list}
+
+def getalledges(edgecounter):
+    a, b = np.where(np.triu(edgecounter) != 0)
+    return np.array([a,b]).T
     
 def getoutervertices(edgelist):
     vertices = set()
@@ -234,7 +238,7 @@ def newreconstructfromedgelengths(faces, edgelengths, dimensions = 2):
             newvertices[:,k] = np.array([x_k2, y_k2])
 
         #we also add all the vertices to the tracker
-        vertextracker.append(i), vertextracker.append(j), vertextracker.append(k)
+        vertextracker.append(i), vertextracker.append(j), vertextracker.append(k) # type: ignore
 
         # Now we basically repeat what we did for k in the last step for all of the faces. If a face shares two vertices with ones we have already, we can work on that. Otherwise it is skipped for now
         while(len(vertextracker) < nr_vertices):
@@ -302,7 +306,7 @@ def visualizecircles(vertices, radii, subplot):
     '''Draw the circle with given radius at the position of the vertex of the same index
     '''
     for i in range(radii.shape[0]):
-        circle = plt.Circle(vertices[:,i], radii[i])
+        circle = plt.Circle(vertices[:,i], radii[i]) # type: ignore
         subplot.add_patch(circle)
 
     subplot.axis('equal')
@@ -318,26 +322,27 @@ def visualizecircles(vertices, radii, subplot):
 
 
 '''for testing purposes'''
-filepath = "data/2dfolder/fulldata/testfile.txt"
-#edges = np.array([[0,1,1,0, 0.707106781186],[1, 0, 0, 1, 0.707106781186],[1,0,0,1, 0.707106781186],[0,1,1,0, 0.707106781186],[0.707106781186,0.707106781186,0.707106781186,0.707106781186,0]])
+# filepath = "data/2dfolder/fulldata/testfile.txt"
+# #edges = np.array([[0,1,1,0, 0.707106781186],[1, 0, 0, 1, 0.707106781186],[1,0,0,1, 0.707106781186],[0,1,1,0, 0.707106781186],[0.707106781186,0.707106781186,0.707106781186,0.707106781186,0]])
 
 
 
-data = ""
-with open(filepath , "r") as f:
-    data = f.read()
-Graph = TwoDGraph(vgl = data)
-a, b = np.where(Graph.edgecounter != 0)
-edges = np.array([a,b]).T
-edgelengths = np.zeros((Graph.vertices.shape[1],Graph.vertices.shape[1]))
-for i,j in edges:
-    edgelengths[i,j] = edgelengths[j,i] = np.linalg.norm(Graph.vertices[:,i] - Graph.vertices[:,j])
+# data = ""
+# with open(filepath , "r") as f:
+#     data = f.read()
+# Graph = TwoDGraph(vgl = data)
+# a, b = np.where(Graph.edgecounter != 0)
+# edges = np.array([a,b]).T
+# edgelengths = np.zeros((Graph.vertices.shape[1],Graph.vertices.shape[1]))
+# for i,j in edges:
+#     edgelengths[i,j] = edgelengths[j,i] = np.linalg.norm(Graph.vertices[:,i] - Graph.vertices[:,j])
 
+# print(getalledges(Graph.edgecounter))
 
-radii = spherepacker(Graph, edges, edgelengths)
-print(radii)
+# radii = spherepacker(Graph, edges, edgelengths)
+# print(radii)
 
-#newGraph = newreconstructfromedgelengths(list(Graph.faces), edges)
+# #newGraph = newreconstructfromedgelengths(list(Graph.faces), edges)
 
 
 # fig, axs = plt.subplots()
