@@ -178,7 +178,7 @@ def optimizeviasvg(Graph: TwoDGraph, loops: int, learnrate = 0.01):
     '''Once again we optimize the edge vectors to keep the problem quadratic. However, through the singular value decomposition of the connectivity matrix (as long as the graph has more edges than vertices),
     we can find a matrix N describing the space to which our optimal solution of edgelengths should be orthogonal.
 
-    TODO 1: implement gradient descent
+    TODO 1: Investigate why this still doesnt give us graphs that can be recreated?!
     TODO 2: Investigate whether negative radii appear
     TODO 3: Investigate what to do about it?
 
@@ -199,22 +199,23 @@ def optimizeviasvg(Graph: TwoDGraph, loops: int, learnrate = 0.01):
     # Our problem can be broken down to connectivity @ radii = edges. Through singular value decomposition, we can find the core of the connectivity matrix, hidden in left singular vectors. 
     LS, Sig, RS = np.linalg.svd(connectivity)
     N = torch.tensor(LS[:,vertexnr:].T, requires_grad = False)
-    # print("right vectors: " , RS)
-    # print("Singular values: ", Sig)
-    # print("Full lefties:", LS)
-    # print("only lefties we want:", LS[:,vertexnr:])
+    # print("right vectors: " , RS),print("Singular values: ", Sig),print("Full lefties:", LS), print("only lefties we want:", LS[:,vertexnr:])
 
     # And now we get to the actual optimization. Since N is orthogonal to some fitting edgelengths in the question of connectivity @ radii = edges, we wish to achieve exactly that:
     edgetensor = torch.tensor(np.linalg.norm(vertices[:,edges[:,0]] - vertices[:,edges[:,1]], axis = 0), requires_grad = True)    
+
+    
     for i in range(loops):
         # energy in this case is just how close we are to orthogonality:
-        energy = torch.linalg.norm(N @ edgetensor)
-        energies.append(energy)
+        energy = torch.linalg.norm(N @ edgetensor) **2
+        energies.append(energy.item())
     
         energy.backward()
 
         with torch.no_grad():
             edgetensor -= learnrate * edgetensor.grad # type: ignore
+
+        torch.abs(edgetensor)
 
         # Reset Gradient
         edgetensor.grad.zero_() # type: ignore
@@ -224,9 +225,12 @@ def optimizeviasvg(Graph: TwoDGraph, loops: int, learnrate = 0.01):
     edgematrix = np.zeros((vertexnr, vertexnr))
     for i in range(edgenr):
         edgematrix[edges[i,0], edges[i,1]] = edgematrix[edges[i,1], edges[i,0]] = edgelengths[i]
+    
+    print(edgematrix)
 
-    newGraph = gutil.newreconstructfromedgelengths(list(Graph.faces), edges)
-    return newGraph, np.array(energies)
+    newGraph = gutil.newreconstructfromedgelengths(list(Graph.faces), edgematrix)
+    radii = gutil.spherepacker(Graph, edges, edgematrix)
+    return newGraph, np.array(energies), radii
 
 
 
@@ -263,24 +267,23 @@ def main(Graph: TwoDGraph, outputpath: str, attempts = 1, stepsize = 2000):
     TutteGraph = gutil.standardtuttembedding(Graph)
     gutil.showGraph(TutteGraph, axs[0,1])
     axs[0,1].text(1.1,0.5, "    AES energy\n  for Tutte: \n     " + str(format(optimizers.SnapshotAES(TutteGraph),".8f")), transform=axs[0,1].transAxes,  rotation = 0, va = "center", ha="center", fontsize=7)
-    optimizeviasvg(Graph, stepsize, 0.01)
+    
+    for i in range(1, 1 + attempts):
+        AESgraph, energies, radii = optimizeviasvg(Graph, i * stepsize, learnrate = 0.001)
+
+        # axs[i,0].set_title("Soft conditions over optimization",fontsize = 7, y = -0.25)
+        # print(outeredenergies[-1])
+
+        axs[i,0].text(1.1,0.5, " Final AES\n  energy:\n     " + str(format(energies[-1], ".8f")), transform=axs[i,1].transAxes,  rotation = 0, va = "center", ha="center", fontsize=7)
+
+        axs[i,0].set_title("AES minimized graph", fontsize = 7, y = -0.25)
+        gutil.showGraph(AESgraph, axs[i,0])
+        gutil.visualizecircles(AESgraph.vertices, radii, axs[i,0])
+
+        axs[i,1].set_title("AES energy over optimization",fontsize = 7, y = -0.25)
+        axs[i,1].plot(energies)
+        axs[i,1].text(1.1,0.5, " Final AES\n  energy:\n     " + str(format(energies[-1], ".8f")), transform=axs[i,1].transAxes,  rotation = 0, va = "center", ha="center", fontsize=7)
+
 
     
-    # for i in range(1, 1 + attempts):
-    #     AESgraph, energies, outeredenergies = gradientAESoptimizeedges(Graph, i * stepsize)
-
-        #axs[i,0].set_title("Soft conditions over optimization",fontsize = 7, y = -0.25)
-        #print(outeredenergies[-1])
-
-        # axs[i,0].text(1.1,0.5, " Final AES\n  energy:\n     " + str(format(energies[-1], ".8f")), transform=axs[i,1].transAxes,  rotation = 0, va = "center", ha="center", fontsize=7)
-
-        # axs[i,0].set_title("AES minimized graph", fontsize = 7, y = -0.25)
-        # gutil.showGraph(AESgraph, axs[i,0])
-
-        # axs[i,1].set_title("outer energy over optimization",fontsize = 7, y = -0.25)
-        # axs[i,1].plot(energies)
-        # axs[i,1].text(1.1,0.5, " Final AES\n  energy:\n     " + str(format(energies[-1], ".8f")), transform=axs[i,1].transAxes,  rotation = 0, va = "center", ha="center", fontsize=7)
-
-
-    
-    #plt.savefig(outputpath + "_edges_optimized.pdf")
+    plt.savefig(outputpath + "optimizeviasvg.pdf")

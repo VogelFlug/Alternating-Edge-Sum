@@ -139,54 +139,6 @@ def standardtuttembedding(Graph: TwoDGraph):
     return newGraph
 
 
-def reconstructfromedgelengths(Graph: TwoDGraph, edgelengths, learnrate = 0.001):
-    '''Reconstructs a Graph from edgelengths via optimization.
-    
-    # Input variables:
-    # Graph = Graph with which to start the optimization, will probably just be the original graph.
-    # edgelengths = edgelengths we have generated, will be in the form of a matrix where (i,j) needs to be the edgelength between i and j (otherwise zero) for all i<j
-
-    # Output: New Graph determined to be "close enough" to the goal edgelengths
-
-    TODO: why does this struggle to reconstruct some of the graphs?
-    '''
-    vertices = Graph.vertices
-    oe = np.array(list(getouteredges(Graph.edgecounter)))
-    ie = np.array(list(getinneredges(Graph.edgecounter)))
-
-
-    Verttensor = torch.tensor(vertices, requires_grad=True)
-    edges = np.concatenate((oe,ie))
-    #make the edges sorted so vertex one has lower index than vertex two. This is to make up for my scuffed implementation earlier
-    edges[:,0], edges[:,1] = np.minimum(edges[:,0],edges[:,1]), np.maximum(edges[:,0],edges[:,1])
-    #to remember the energies so we can plot them afterwards
-    energies = []
-    # Get the goallengths outside of the loop cause they stay consistent
-    goalleng = torch.tensor(edgelengths[edges[:,0], edges[:,1]], requires_grad=False)
-
-    for i in range(2000):
-        # First get a vector holding our current edgelengths:
-        curredgeleng = torch.linalg.norm(Verttensor[:,edges[:,0]]-Verttensor[:,edges[:, 1]], dim=0)
-
-
-        # get the energy
-        energy = torch.sum((goalleng - curredgeleng)**2)
-        energies.append(energy.item())
-        
-        # get gradient through backpropagation
-        energy.backward()
-        
-
-        with torch.no_grad():
-            Verttensor -= learnrate * Verttensor.grad # type: ignore
-
-        # reset Gradient
-        Verttensor.grad.zero_() # type: ignore
-        
-    vertexs = Verttensor.detach().numpy()
-    newGraph = TwoDGraph(vertices=vertexs, faces=Graph.faces)
-    return newGraph, np.array(energies)
-
 def newreconstructfromedgelengths(faces, edgelengths, dimensions = 2):
     '''Reconstructs a Graph from edgelengths by recreating the triangles one by one. We create the first face manually and from there attach the surrounding ones one by one
     
@@ -206,7 +158,6 @@ def newreconstructfromedgelengths(faces, edgelengths, dimensions = 2):
 
     # Hardforce first face. 
     firstface = facequeue[0]
-    print(firstface)
     facequeue.remove(firstface)
     i, j, k = firstface[0], firstface[1], firstface[2]
     ij = edgelengths[i,j]
@@ -323,7 +274,7 @@ def visualizecircles(vertices, radii, subplot):
 
 '''for testing purposes'''
 # filepath = "data/2dfolder/fulldata/testfile.txt"
-# #edges = np.array([[0,1,1,0, 0.707106781186],[1, 0, 0, 1, 0.707106781186],[1,0,0,1, 0.707106781186],[0,1,1,0, 0.707106781186],[0.707106781186,0.707106781186,0.707106781186,0.707106781186,0]])
+# # #edges = np.array([[0,1,1,0, 0.707106781186],[1, 0, 0, 1, 0.707106781186],[1,0,0,1, 0.707106781186],[0,1,1,0, 0.707106781186],[0.707106781186,0.707106781186,0.707106781186,0.707106781186,0]])
 
 
 
@@ -337,15 +288,18 @@ def visualizecircles(vertices, radii, subplot):
 # for i,j in edges:
 #     edgelengths[i,j] = edgelengths[j,i] = np.linalg.norm(Graph.vertices[:,i] - Graph.vertices[:,j])
 
-# print(getalledges(Graph.edgecounter))
+# # print(getalledges(Graph.edgecounter))
 
-# radii = spherepacker(Graph, edges, edgelengths)
-# print(radii)
-
-# #newGraph = newreconstructfromedgelengths(list(Graph.faces), edges)
-
+# # radii = spherepacker(Graph, edges, edgelengths)
+# # print(radii)
 
 # fig, axs = plt.subplots()
 # showGraph(Graph, axs)
-# visualizecircles(Graph.vertices, radii, axs)
+# plt.show()
+
+# newGraph = newreconstructfromedgelengths(list(Graph.faces), edgelengths)
+
+
+# fig, axs = plt.subplots()
+# showGraph(newGraph, axs)
 # plt.show()

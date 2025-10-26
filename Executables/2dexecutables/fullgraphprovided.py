@@ -8,8 +8,9 @@ from main import main
 from util.TwoDGraph import TwoDGraph
 
 filepath = "data/2dfolder/fulldata/megabasic.txt"
+outputfolder = "output/2dfolder/optimizesvg/"
 attempts = 1
-stepsize = 1000
+stepsize = 5000
 
 if __name__ == '__main__':
     # if(len(sys.argv)<2):
@@ -20,6 +21,6 @@ if __name__ == '__main__':
     with open(filepath , "r") as f:
         data = f.read()
     Graph = TwoDGraph(vgl = data)
-    main(Graph, "output" + filepath[4:-4], attempts, stepsize)
+    main(Graph, outputfolder + filepath[-13:-4], attempts, stepsize)
 
 
