@@ -9,9 +9,10 @@ from util.TwoDGraph import TwoDGraph
 from scipy.spatial import Delaunay
 
 filepath = "data/2dfolder/onlyhulls/basichull.txt"
+outputfolder = "output/2dfolder/optimizesvg/"
 
 attempts = 1
-stepsize = 4000
+stepsize = 7000
 
 #How many randomization of one file do you want?
 tries = 1
@@ -31,7 +32,7 @@ def creategraphfromhull(hull: np.ndarray, nrinsides: int):
 
     #Step two: create the graph based of these vertices with Delaunay
     tri = Delaunay(fullvertices)
-    return TwoDGraph(vertices=fullvertices.T, faces=tri.simplices)
+    return TwoDGraph(vertices=fullvertices.T, faces=tri.simplices.tolist())
 
 
 if __name__ == '__main__':
@@ -48,7 +49,7 @@ if __name__ == '__main__':
         print(nrinsides)
 
         randomized_graph = creategraphfromhull(vertices, nrinsides)
-        main(randomized_graph, "output" + filepath[4:-4] + str(seed))
+        main(randomized_graph, outputfolder + "basichull" + str(seed), stepsize=stepsize)
 
 
 

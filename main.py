@@ -270,6 +270,7 @@ def main(Graph: TwoDGraph, outputpath: str, attempts = 1, stepsize = 2000):
     
     for i in range(1, 1 + attempts):
         AESgraph, energies, radii = optimizeviasvg(Graph, i * stepsize, learnrate = 0.001)
+        print(radii)
 
         # axs[i,0].set_title("Soft conditions over optimization",fontsize = 7, y = -0.25)
         # print(outeredenergies[-1])
@@ -278,7 +279,7 @@ def main(Graph: TwoDGraph, outputpath: str, attempts = 1, stepsize = 2000):
 
         axs[i,0].set_title("AES minimized graph", fontsize = 7, y = -0.25)
         gutil.showGraph(AESgraph, axs[i,0])
-        gutil.visualizecircles(AESgraph.vertices, radii, axs[i,0])
+        #gutil.visualizecircles(AESgraph.vertices, radii, axs[i,0])
 
         axs[i,1].set_title("AES energy over optimization",fontsize = 7, y = -0.25)
         axs[i,1].plot(energies)
