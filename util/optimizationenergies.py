@@ -125,6 +125,11 @@ def edgefixer(curredgelengths, goallengths):
     '''
     return torch.sum((goallengths - curredgelengths)**2)
 
+def anglesum():
+    '''We want the sum of angles around all inner vertices to be 360 degrees. For this, we use the law of cosines on each face surrounding the vertex to check its angle.
+    '''
+    return
+
 
 
 
