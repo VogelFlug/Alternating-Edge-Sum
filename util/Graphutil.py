@@ -262,9 +262,31 @@ def visualizecircles(vertices, radii, subplot):
 
     subplot.axis('equal')
 
+def getsurroundingedgelist(vertexnr: int, faces: tuple[int,int,int], edges: list):
+    '''Given a graph, regardless of the actual values of edges and vertices, we can create a list for each vertex which 
+    edges are required to be added and subtracted and otherwise. 
 
-
-
+    # Output: A list of lists of lists. Ye i know. 
+    The outer list holds one list per vertex i. Each of those lists holds one list per face [i,j,k] that i is a part of. 
+    Those most inner lists each have the form [a,b,c], where a is the index of the edge [i,j], b is the index of the edge [i,k] 
+    and c is the index of [j,k]. This helps us more easily calculate the angle sum in the future. 
+    From there we can separate out only the inner vertices
+    '''
+    finallist = [[] for i in range(vertexnr)]
+    # Keep track of how many faces we already have per vertex, This is a suprise tool that will help us later :D
+    vertfacecounter  = np.zeros(vertexnr)
+    # outer loop, runs for each face and adds "itself" to the regarding vertices
+    for [i,j,k] in faces:
+        finallist[i].append([]),finallist[j].append([]),finallist[k].append([])
+        ij = edges.index([i,j])
+        ki = edges.index([i,k])
+        jk = edges.index([j,k])
+        # Now to get the structure [a,b,c] we want, this is slightly scuffed, but it should work
+        finallist[i][int(vertfacecounter[i])].extend([ij, ki, jk])
+        finallist[j][int(vertfacecounter[j])].extend([jk, ij, ki])
+        finallist[k][int(vertfacecounter[k])].extend([ki, jk, ij])
+        vertfacecounter[[i,j,k]] += 1
+    return finallist
 
 
 
@@ -273,10 +295,8 @@ def visualizecircles(vertices, radii, subplot):
 
 
 '''for testing purposes'''
-# filepath = "data/2dfolder/fulldata/testfile.txt"
+# filepath = "data/2dfolder/fulldata/basicexample.txt"
 # # #edges = np.array([[0,1,1,0, 0.707106781186],[1, 0, 0, 1, 0.707106781186],[1,0,0,1, 0.707106781186],[0,1,1,0, 0.707106781186],[0.707106781186,0.707106781186,0.707106781186,0.707106781186,0]])
-
-
 
 # data = ""
 # with open(filepath , "r") as f:
@@ -288,10 +308,20 @@ def visualizecircles(vertices, radii, subplot):
 # for i,j in edges:
 #     edgelengths[i,j] = edgelengths[j,i] = np.linalg.norm(Graph.vertices[:,i] - Graph.vertices[:,j])
 
-# # print(getalledges(Graph.edgecounter))
+# print(getalledges(Graph.edgecounter))
 
-# # radii = spherepacker(Graph, edges, edgelengths)
-# # print(radii)
+# radii = spherepacker(Graph, edges, edgelengths)
+# print(radii)
+# oe = getouteredges(Graph.edgecounter)
+# ie = getinneredges(Graph.edgecounter)
+# ov = getoutervertices(oe)
+
+# print(edges.tolist())
+# el = getsurroundingedgelist(Graph.vertexnumber, Graph.faces, edges.tolist())
+# iv = getinnervertices(Graph.vertexnumber, ov)
+
+# print([el[i] for i in iv])
+
 
 # fig, axs = plt.subplots()
 # showGraph(Graph, axs)
