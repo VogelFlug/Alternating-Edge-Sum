@@ -178,18 +178,20 @@ def optimizeviasvg(Graph: TwoDGraph, loops: int, learnrate = 0.01):
     '''Once again we optimize the edge vectors to keep the problem quadratic. However, through the singular value decomposition of the connectivity matrix (as long as the graph has more edges than vertices),
     we can find a matrix N describing the space to which our optimal solution of edgelengths should be orthogonal.
 
-    TODO 1: Investigate why this still doesnt give us graphs that can be recreated?!
-    TODO 2: Investigate whether negative radii appear
-    TODO 3: Investigate what to do about it?
+    TODO 1: Implement cutting of negative Radii (min(0, N^+ @ edges))
+    TODO 2: Implement anglesum constraint (pi - anglesum) and find out if this whole thing still functions with an arccos thrown in?
+    TODO 3: Implement the Graphing of multiple constraints
+
 
     '''
     vertices = Graph.vertices
     edges = gutil.getalledges(Graph.edgecounter)
-
     vertexnr = vertices.shape[1]
     edgenr = edges.shape[0]
+    iv = gutil.ivfromscratch()
 
     energies = []
+    constraintenergies = []
 
     # The connectivity matrix has one row per edge and that row is entirely 0 except for the two vertices that make that edge
     connectivity = np.zeros((edgenr,vertexnr))
@@ -202,15 +204,24 @@ def optimizeviasvg(Graph: TwoDGraph, loops: int, learnrate = 0.01):
     # print("right vectors: " , RS),print("Singular values: ", Sig),print("Full lefties:", LS), print("only lefties we want:", LS[:,vertexnr:])
 
     # And now we get to the actual optimization. Since N is orthogonal to some fitting edgelengths in the question of connectivity @ radii = edges, we wish to achieve exactly that:
-    edgetensor = torch.tensor(np.linalg.norm(vertices[:,edges[:,0]] - vertices[:,edges[:,1]], axis = 0), requires_grad = True)    
+    edgetensor = torch.tensor(np.linalg.norm(vertices[:,edges[:,0]] - vertices[:,edges[:,1]], axis = 0), requires_grad = True)  
 
+    # Here we prepare our constraints. First: The anglesum. For it we wish to have a list of which edges to check how. For further explanation, read documentation of Graphutil.getsurroundingedgelist()
+    allsurroundings = gutil.getsurroundingedgelist(vertexnr, Graph.faces, edges.tolist())
+    innersurrounds = [allsurroundings[i] for i in iv]
     
     for i in range(loops):
         # energy in this case is just how close we are to orthogonality:
         energy = torch.linalg.norm(N @ edgetensor) **2
         energies.append(energy.item())
+
+        anglesum = optimizers.anglesum(innersurrounds, edgetensor)
+        anglenergy = torch.linalg.norm((torch.zeros(anglesum.shape[0] + 2 * torch.pi) - anglesum))
+        constraintenergies.append(anglenergy.item())
+
+        fullenergy = energy + anglenergy
     
-        energy.backward()
+        fullenergy.backward()
 
         with torch.no_grad():
             edgetensor -= learnrate * edgetensor.grad # type: ignore

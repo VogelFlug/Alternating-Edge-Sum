@@ -125,10 +125,30 @@ def edgefixer(curredgelengths, goallengths):
     '''
     return torch.sum((goallengths - curredgelengths)**2)
 
-def anglesum():
+def anglesum(Surrounds, edgetensor, vertexnr = 0):
     '''We want the sum of angles around all inner vertices to be 360 degrees. For this, we use the law of cosines on each face surrounding the vertex to check its angle.
+
+    # Input Variables:
+    # Surrounds: A list of list of lists holding the surroundings of each vertex (read Graphutil.getsurroundingedgelist for clearer explanation)
+    # edgetensor: The edgetensor we wish to optimize
+
+    # Output:
+    # A vector holding the sum of all surrounding angles for vertex i at index i. TODO: find out if thats in rad or deg
     '''
-    return
+    invertexnr = len(Surrounds)
+    
+    anglesums = np.zeros(invertexnr)
+    # Now for the outer loop: this just runs once per vertex (i.e. per list in surrounds) and gets the anglesum for that vertex
+    for i in range(invertexnr):
+        faces = Surrounds[i]
+        # this is where the magic happens, we simply calculate angle at the vertex i for that face and add it to its anglesum
+        for [a,b,c] in faces:
+            temp = a**2 + b**2 - c**2
+            temp2 = temp/(2*a*b)
+            gamma = np.arccos(temp2)
+            anglesums[i] += gamma
+            
+    return anglesums
 
 
 

@@ -25,16 +25,25 @@ def getinneredges(edgecounter) -> set[tuple[int,int]]:
 def getalledges(edgecounter):
     a, b = np.where(np.triu(edgecounter) != 0)
     return np.array([a,b]).T
-    
-def getoutervertices(edgelist):
+
+def getoutervertices(outeredges):
+    ''' Simply get all outervertices by proxy of getting the outeredges    '''
     vertices = set()
-    for i,j in edgelist:
+    for i,j in outeredges:
         vertices.add(i)
         vertices.add(j)
     return tuple(vertices)
 
 def getinnervertices(vertexnumber, outvertices):
+    ''' Assume we have the outervertices and just get the rest'''
     return tuple(set(range(0,vertexnumber)).difference(outvertices))
+
+def ivfromscratch(vertexnumber, edgecounter):
+    ''' To save a few lines in the code, that's all'''
+    oe = getouteredges(edgecounter)
+    ov = getoutervertices(oe)
+    return getinnervertices(ov)
+
 
 #This plots a graph in the provided plot
 def showGraph(Graph: TwoDGraph, fullplot):
