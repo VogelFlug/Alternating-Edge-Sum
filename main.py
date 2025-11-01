@@ -1,7 +1,7 @@
 #Imports
 import numpy as np
 import torch
-#import torchviz
+import torchviz
 from matplotlib import pyplot as plt
 import sys
 from io import StringIO
@@ -188,23 +188,26 @@ def optimizeviasvg(Graph: TwoDGraph, loops: int, learnrate = 0.01):
     edges = gutil.getalledges(Graph.edgecounter)
     vertexnr = vertices.shape[1]
     edgenr = edges.shape[0]
-    iv = gutil.ivfromscratch()
+    iv = gutil.ivfromscratch(vertexnr, Graph.edgecounter)
 
     energies = []
-    constraintenergies = []
+    constraintenergies = [[],[]]
 
     # The connectivity matrix has one row per edge and that row is entirely 0 except for the two vertices that make that edge
-    connectivity = np.zeros((edgenr,vertexnr))
+    connectivity = torch.zeros((edgenr,vertexnr))
     for i in range(edgenr):
         connectivity[i, edges[i,0]] = connectivity[i, edges[i,1]] = 1
 
+    # get the pseudo inverse of the connectivity matrix to later get "fake" radii from current edgelength
+    pseu_A = torch.linalg.pinv(connectivity)
+
     # Our problem can be broken down to connectivity @ radii = edges. Through singular value decomposition, we can find the core of the connectivity matrix, hidden in left singular vectors. 
-    LS, Sig, RS = np.linalg.svd(connectivity)
-    N = torch.tensor(LS[:,vertexnr:].T, requires_grad = False)
+    LS, Sig, RS = torch.linalg.svd(connectivity)
+    N = LS[:,vertexnr:].T
     # print("right vectors: " , RS),print("Singular values: ", Sig),print("Full lefties:", LS), print("only lefties we want:", LS[:,vertexnr:])
 
     # And now we get to the actual optimization. Since N is orthogonal to some fitting edgelengths in the question of connectivity @ radii = edges, we wish to achieve exactly that:
-    edgetensor = torch.tensor(np.linalg.norm(vertices[:,edges[:,0]] - vertices[:,edges[:,1]], axis = 0), requires_grad = True)  
+    edgetensor = torch.tensor(np.linalg.norm(vertices[:,edges[:,0]] - vertices[:,edges[:,1]], axis = 0), requires_grad = True, dtype=torch.float32)  
 
     # Here we prepare our constraints. First: The anglesum. For it we wish to have a list of which edges to check how. For further explanation, read documentation of Graphutil.getsurroundingedgelist()
     allsurroundings = gutil.getsurroundingedgelist(vertexnr, Graph.faces, edges.tolist())
@@ -212,14 +215,22 @@ def optimizeviasvg(Graph: TwoDGraph, loops: int, learnrate = 0.01):
     
     for i in range(loops):
         # energy in this case is just how close we are to orthogonality:
-        energy = torch.linalg.norm(N @ edgetensor) **2
+        energy = torch.linalg.norm(N @ edgetensor) ** 2
         energies.append(energy.item())
 
+        # Get the energy representing how close we are to all innervertices having an anglesum of 360 degrees
         anglesum = optimizers.anglesum(innersurrounds, edgetensor)
-        anglenergy = torch.linalg.norm((torch.zeros(anglesum.shape[0] + 2 * torch.pi) - anglesum))
-        constraintenergies.append(anglenergy.item())
+        anglenergy = 0.01 * torch.linalg.norm((torch.zeros(anglesum.shape[0]) + 2 * torch.pi) - anglesum)
+        constraintenergies[0].append(anglenergy.item())
 
-        fullenergy = energy + anglenergy
+        # Punish negative radii (or at least the "simulated" radii)
+        pseu_rad = pseu_A @ edgetensor
+        pseu_neg = torch.min(torch.stack((pseu_rad, torch.zeros(vertexnr))), dim = 0).values
+        radergy = torch.linalg.norm(pseu_neg)
+        constraintenergies[1].append(radergy.item())
+
+        fullenergy = energy + anglenergy + radergy
+
     
         fullenergy.backward()
 
@@ -237,11 +248,10 @@ def optimizeviasvg(Graph: TwoDGraph, loops: int, learnrate = 0.01):
     for i in range(edgenr):
         edgematrix[edges[i,0], edges[i,1]] = edgematrix[edges[i,1], edges[i,0]] = edgelengths[i]
     
-    print(edgematrix)
 
     newGraph = gutil.newreconstructfromedgelengths(list(Graph.faces), edgematrix)
     radii = gutil.spherepacker(Graph, edges, edgematrix)
-    return newGraph, np.array(energies), radii
+    return newGraph, np.array(energies), radii, constraintenergies
 
 
 
@@ -266,8 +276,8 @@ def main(Graph: TwoDGraph, outputpath: str, attempts = 1, stepsize = 2000):
 
 
 
-    #create the plots
-    fig, axs = plt.subplots(1 + attempts,2)
+    #create the plots, First row is for Original Graph and Tutte Embedding, every two rows after that are for one attempt, holding the attempted recreation of the graph, the minimized AES energy, and up to two constraintenergies
+    fig, axs = plt.subplots(1 + 2*attempts,2)
 
     #plot input graph for reference
     axs[0,0].set_title("Original Graph", fontsize = 7)
@@ -280,21 +290,29 @@ def main(Graph: TwoDGraph, outputpath: str, attempts = 1, stepsize = 2000):
     axs[0,1].text(1.1,0.5, "    AES energy\n  for Tutte: \n     " + str(format(optimizers.SnapshotAES(TutteGraph),".8f")), transform=axs[0,1].transAxes,  rotation = 0, va = "center", ha="center", fontsize=7)
     
     for i in range(1, 1 + attempts):
-        AESgraph, energies, radii = optimizeviasvg(Graph, i * stepsize, learnrate = 0.001)
+        AESgraph, energies, radii, constraintenergies = optimizeviasvg(Graph, i * stepsize, learnrate = 0.003)
         print(radii)
 
         # axs[i,0].set_title("Soft conditions over optimization",fontsize = 7, y = -0.25)
         # print(outeredenergies[-1])
 
-        axs[i,0].text(1.1,0.5, " Final AES\n  energy:\n     " + str(format(energies[-1], ".8f")), transform=axs[i,1].transAxes,  rotation = 0, va = "center", ha="center", fontsize=7)
+        axs[2*i-1,0].text(1.1,0.5, " Final AES\n  energy:\n     " + str(format(energies[-1], ".8f")), transform=axs[2*i-1,1].transAxes,  rotation = 0, va = "center", ha="center", fontsize=7)
 
-        axs[i,0].set_title("AES minimized graph", fontsize = 7, y = -0.25)
+        axs[2*i-1,0].set_title("AES minimized graph", fontsize = 7, y = -0.25)
         gutil.showGraph(AESgraph, axs[i,0])
-        #gutil.visualizecircles(AESgraph.vertices, radii, axs[i,0])
+        gutil.visualizecircles(AESgraph.vertices, radii, axs[i,0])
 
-        axs[i,1].set_title("AES energy over optimization",fontsize = 7, y = -0.25)
-        axs[i,1].plot(energies)
-        axs[i,1].text(1.1,0.5, " Final AES\n  energy:\n     " + str(format(energies[-1], ".8f")), transform=axs[i,1].transAxes,  rotation = 0, va = "center", ha="center", fontsize=7)
+        axs[2*i-1,1].set_title("AES energy over optimization",fontsize = 7, y = -0.25)
+        axs[2*i-1,1].plot(energies)
+        axs[2*i-1,1].text(1.1,0.5, " Final AES\n  energy:\n     " + str(format(energies[-1], ".8f")), transform=axs[2*i-1,1].transAxes,  rotation = 0, va = "center", ha="center", fontsize=7)
+
+        # For the constraint energies, we assume we always implement two constraintenergies. If its less, the graphs remain empty, if its more...TODO
+        axs[2*i,0].set_title("First Constraint Energy",fontsize = 7, y = -0.25)
+        axs[2*i,0].plot(constraintenergies[0])
+        axs[2*i,1].set_title("Second Constraint Energy",fontsize = 7, y = -0.25)
+        axs[2*i,1].plot(constraintenergies[1])
+        axs[2*i,1].text(1.1,0.5, " Final Total\n  energy:\n     " + str(format(energies[-1] + constraintenergies[0][-1], ".8f")), transform=axs[2*i,1].transAxes,  rotation = 0, va = "center", ha="center", fontsize=7)
+
 
 
     

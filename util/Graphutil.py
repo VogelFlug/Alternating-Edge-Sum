@@ -42,7 +42,7 @@ def ivfromscratch(vertexnumber, edgecounter):
     ''' To save a few lines in the code, that's all'''
     oe = getouteredges(edgecounter)
     ov = getoutervertices(oe)
-    return getinnervertices(ov)
+    return getinnervertices(vertexnumber, ov)
 
 
 #This plots a graph in the provided plot
@@ -152,9 +152,9 @@ def newreconstructfromedgelengths(faces, edgelengths, dimensions = 2):
     '''Reconstructs a Graph from edgelengths by recreating the triangles one by one. We create the first face manually and from there attach the surrounding ones one by one
     
     # Input variables:
-    # faces = a list of all the faces of the Graph, of type list[int,int,int]
-    # edgelengths = edgelengths we have generated, will be in the form of a matrix where (i,j) needs to be the edgelength between i and j (otherwise zero) for all i,j. if i had to be smaller than j, this would just be painful
-    # dimensions = just in case i wanna keep this function for 3 dimensions
+    faces = a list of all the faces of the Graph, of type list[int,int,int]
+    edgelengths = edgelengths we have generated, will be in the form of a matrix where (i,j) needs to be the edgelength between i and j (otherwise zero) for all i,j. if i had to be smaller than j, this would just be painful
+    dimensions = just in case i wanna keep this function for 3 dimensions
 
     # Output: New Graph with those edgelengths
 
@@ -241,12 +241,12 @@ def spherepacker(Graph: TwoDGraph, edges, edgelengths, dimensions = 2):
     TODO: Furhter implement a visualization of the spheres
 
     # Input Variables: 
-    # edges = E x 2 array, with all the edges in form (i,j) where i and j are the connected vertices
-    # edgelengths = edgelengths we have generated, will be in the form of a matrix where (i,j) needs to be the edgelength between i and j (otherwise zero) for all i,j. if i had to be smaller than j, this would just be painful
-    # dimensions = Currently only supports 2 dimensions TODO: implement 3
+    edges = E x 2 array, with all the edges in form (i,j) where i and j are the connected vertices
+    edgelengths = edgelengths we have generated, will be in the form of a matrix where (i,j) needs to be the edgelength between i and j (otherwise zero) for all i,j. if i had to be smaller than j, this would just be painful
+    dimensions = Currently only supports 2 dimensions TODO: implement 3
 
-    # Output:
-    # array of size |V|, that gives the radius for a vertex at the respective index
+    Output:
+    array of size |V|, that gives the radius for a vertex at the respective index
     '''
     vertices = Graph.vertices
     edgenr = edges.shape[0]
@@ -285,11 +285,11 @@ def getsurroundingedgelist(vertexnr: int, faces: tuple[int,int,int], edges: list
     # Keep track of how many faces we already have per vertex, This is a suprise tool that will help us later :D
     vertfacecounter  = np.zeros(vertexnr)
     # outer loop, runs for each face and adds "itself" to the regarding vertices
-    for [i,j,k] in faces:
-        finallist[i].append([]),finallist[j].append([]),finallist[k].append([])
-        ij = edges.index([i,j])
-        ki = edges.index([i,k])
-        jk = edges.index([j,k])
+    for [i,j,k] in faces: # type: ignore
+        finallist[i].append([]),finallist[j].append([]),finallist[k].append([]) # type: ignore
+        ij = edges.index([min(i,j), max(i,j)])
+        ki = edges.index([min(i,k), max(i,k)])
+        jk = edges.index([min(j,k), max(j,k)])
         # Now to get the structure [a,b,c] we want, this is slightly scuffed, but it should work
         finallist[i][int(vertfacecounter[i])].extend([ij, ki, jk])
         finallist[j][int(vertfacecounter[j])].extend([jk, ij, ki])

@@ -117,11 +117,11 @@ def edgefixer(curredgelengths, goallengths):
     We also use the function to reconstruct a graph from the appropriate edgelengths, cause fuck it we ball
 
     # Input Variables:
-    # curedgelengths = our current edge lengths
-    # edgelengths = column vector holding the lengths we want the edges to be. 
+    curedgelengths = our current edge lengths
+    edgelengths = column vector holding the lengths we want the edges to be. 
 
     # Output:
-    # energy that represents how different the edge lengths are from their "goal lengths"
+    energy that represents how different the edge lengths are from their "goal lengths"
     '''
     return torch.sum((goallengths - curredgelengths)**2)
 
@@ -129,23 +129,24 @@ def anglesum(Surrounds, edgetensor, vertexnr = 0):
     '''We want the sum of angles around all inner vertices to be 360 degrees. For this, we use the law of cosines on each face surrounding the vertex to check its angle.
 
     # Input Variables:
-    # Surrounds: A list of list of lists holding the surroundings of each vertex (read Graphutil.getsurroundingedgelist for clearer explanation)
-    # edgetensor: The edgetensor we wish to optimize
+    Surrounds: A list of list of lists holding the surroundings of each vertex (read Graphutil.getsurroundingedgelist for clearer explanation)
+    edgetensor: The edgetensor we wish to optimize
 
     # Output:
-    # A vector holding the sum of all surrounding angles for vertex i at index i. TODO: find out if thats in rad or deg
+    A vector holding the sum of all surrounding angles for vertex i at index i. TODO: find out if thats in rad or deg
     '''
     invertexnr = len(Surrounds)
     
-    anglesums = np.zeros(invertexnr)
+    anglesums = torch.zeros(invertexnr)
     # Now for the outer loop: this just runs once per vertex (i.e. per list in surrounds) and gets the anglesum for that vertex
     for i in range(invertexnr):
         faces = Surrounds[i]
         # this is where the magic happens, we simply calculate angle at the vertex i for that face and add it to its anglesum
         for [a,b,c] in faces:
-            temp = a**2 + b**2 - c**2
-            temp2 = temp/(2*a*b)
-            gamma = np.arccos(temp2)
+            alen, blen, clen = edgetensor[a], edgetensor[b], edgetensor[c]
+            temp = alen**2 + blen**2 - clen**2
+            temp2 = temp/(2*alen*blen)
+            gamma = torch.arccos(temp2)
             anglesums[i] += gamma
             
     return anglesums
