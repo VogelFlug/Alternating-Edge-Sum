@@ -10,7 +10,7 @@ from util.TwoDGraph import TwoDGraph
 filepath = "data/2dfolder/fulldata/basicexample.txt"
 outputfolder = "output/2dfolder/optimizesvg/"
 attempts = 1
-stepsize = 50000
+stepsize = 200000
 
 if __name__ == '__main__':
     # if(len(sys.argv)<2):

@@ -298,6 +298,19 @@ def getsurroundingedgelist(vertexnr: int, faces: tuple[int,int,int], edges: list
     return finallist
 
 
+def getedgefacelist(faces: tuple[int,int,int], edges: list):
+    '''Given the faces of a Graph indexed as a [i,j,k] tuple, we wish to convert it to an array of structure [jk, ik, ij]. This will let us calculate the anglesum through matrices rather than a bunch of annoying ass for loops '''
+    finallist = torch.zeros((len(faces), 3), dtype=int) # type: ignore
+    for counter, (i,j,k) in enumerate(faces): # type: ignore
+        ij = edges.index([min(i,j), max(i,j)])
+        ki = edges.index([min(i,k), max(i,k)])
+        jk = edges.index([min(j,k), max(j,k)])
+
+        finallist[counter, 0] = jk
+        finallist[counter, 1] = ki
+        finallist[counter, 2] = ij
+    return finallist
+
 
 
 

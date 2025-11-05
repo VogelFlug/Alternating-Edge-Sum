@@ -184,12 +184,16 @@ def optimizeviasvg(Graph: TwoDGraph, loops: int, learnrate = 0.01):
 
 
     '''
+    # Buncha Graph stuff we need later
     vertices = Graph.vertices
     edges = gutil.getalledges(Graph.edgecounter)
     vertexnr = vertices.shape[1]
     edgenr = edges.shape[0]
-    iv = gutil.ivfromscratch(vertexnr, Graph.edgecounter)
+    iv = np.array(gutil.ivfromscratch(vertexnr, Graph.edgecounter), dtype=int)
+    nf = len(Graph.faces)
+    Faces = torch.tensor(Graph.faces)
 
+    # To produce some fun graphs to check out later
     energies = []
     constraintenergies = [[],[]]
 
@@ -204,26 +208,41 @@ def optimizeviasvg(Graph: TwoDGraph, loops: int, learnrate = 0.01):
     # Our problem can be broken down to connectivity @ radii = edges. Through singular value decomposition, we can find the core of the connectivity matrix, hidden in left singular vectors. 
     LS, Sig, RS = torch.linalg.svd(connectivity)
     N = LS[:,vertexnr:].T
-    # print("right vectors: " , RS),print("Singular values: ", Sig),print("Full lefties:", LS), print("only lefties we want:", LS[:,vertexnr:])
 
     # And now we get to the actual optimization. Since N is orthogonal to some fitting edgelengths in the question of connectivity @ radii = edges, we wish to achieve exactly that:
     edgetensor = torch.tensor(np.linalg.norm(vertices[:,edges[:,0]] - vertices[:,edges[:,1]], axis = 0), requires_grad = True, dtype=torch.float32)  
 
-    # Here we prepare our constraints. First: The anglesum. For it we wish to have a list of which edges to check how. For further explanation, read documentation of Graphutil.getsurroundingedgelist()
-    allsurroundings = gutil.getsurroundingedgelist(vertexnr, Graph.faces, edges.tolist())
-    innersurrounds = [allsurroundings[i] for i in iv]
-    
+    # Alright, new plan, time to make matrix magic happen: we will create three numpy arrays of size nf x 3, where for each face [i,j,k], we have the line [ij, jk, ik]
+    faceedges = gutil.getedgefacelist(Graph.faces, edges.tolist())
+    cyclefe = faceedges[:,[1,2,0]]
+    fullcycfe = faceedges[:,[2,0,1]]
+
+    optimalangles = torch.zeros(iv.shape[0]) + 2*torch.pi
+
+
     for i in range(loops):
         # energy in this case is just how close we are to orthogonality:
         energy = torch.linalg.norm(N @ edgetensor) ** 2
         energies.append(energy.item())
 
-        # Get the energy representing how close we are to all innervertices having an anglesum of 360 degrees
-        anglesum = optimizers.anglesum(innersurrounds, edgetensor)
-        anglenergy = 0.0005 * torch.linalg.norm((torch.zeros(anglesum.shape[0]) + 2 * torch.pi) - anglesum)
+        # Get the energy representing how close we are to all innervertices having an anglesum of 360 degrees.
+        # Each face [i,j,k] has 3 angles that need calculating, in the first column we calculate the angle at i, in the second column the angle at j and in the third the angle at k.
+        # Thus each c array is built like [jk, ik, ij] (i.e. holding the edgelength of the opposite edge) and a and b are shifted the represent the other two edges
+        c = edgetensor[faceedges]
+        b = edgetensor[cyclefe]
+        a = edgetensor[fullcycfe]
+
+        # The angles are calculated via the law of consines
+        angles = torch.arccos((torch.square(b) + torch.square(a) - torch.square(c)) / 2 / b / a)
+        anglesums = torch.zeros((nf))
+        # Check whether the anglesum around all inner vertices is 2pi
+        anglesums.scatter_add_(0, Faces.flatten(), angles.flatten())
+        anglenergy = 0.0001 * torch.linalg.norm(optimalangles - anglesums[iv])
         constraintenergies[0].append(anglenergy.item())
 
-        # Punish negative radii (or at least the "simulated" radii)
+
+        # Punish negative radii (or at least the "simulated" radii) via the Pseudo inverse. The Pseudo inverse multiplied with the Edgelength gives us a set of "fake radii", 
+        # we check if forbidding these from being negative prevents negative radii and thus nonense graphs
         pseu_rad = pseu_A @ edgetensor
         pseu_neg = torch.min(torch.stack((pseu_rad, torch.zeros(vertexnr))), dim = 0).values
         radergy = torch.linalg.norm(pseu_neg)
