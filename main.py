@@ -220,7 +220,7 @@ def optimizeviasvg(Graph: TwoDGraph, loops: int, learnrate = 0.01):
 
         # Get the energy representing how close we are to all innervertices having an anglesum of 360 degrees
         anglesum = optimizers.anglesum(innersurrounds, edgetensor)
-        anglenergy = 0.01 * torch.linalg.norm((torch.zeros(anglesum.shape[0]) + 2 * torch.pi) - anglesum)
+        anglenergy = 0.0005 * torch.linalg.norm((torch.zeros(anglesum.shape[0]) + 2 * torch.pi) - anglesum)
         constraintenergies[0].append(anglenergy.item())
 
         # Punish negative radii (or at least the "simulated" radii)
@@ -290,7 +290,7 @@ def main(Graph: TwoDGraph, outputpath: str, attempts = 1, stepsize = 2000):
     axs[0,1].text(1.1,0.5, "    AES energy\n  for Tutte: \n     " + str(format(optimizers.SnapshotAES(TutteGraph),".8f")), transform=axs[0,1].transAxes,  rotation = 0, va = "center", ha="center", fontsize=7)
     
     for i in range(1, 1 + attempts):
-        AESgraph, energies, radii, constraintenergies = optimizeviasvg(Graph, i * stepsize, learnrate = 0.003)
+        AESgraph, energies, radii, constraintenergies = optimizeviasvg(Graph, i * stepsize, learnrate = 0.02)
         print(radii)
 
         # axs[i,0].set_title("Soft conditions over optimization",fontsize = 7, y = -0.25)

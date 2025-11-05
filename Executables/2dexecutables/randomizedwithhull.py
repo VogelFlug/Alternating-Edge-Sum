@@ -3,6 +3,8 @@
 import numpy as np
 import sys
 sys.path.insert(0, 'C:/Users/ich/Desktop/Uni/Alternating-Edge-Sum')
+sys.path.insert(0, 'C:/Users/daveb/OneDrive/Desktop/Uni/Alternating-Edge-Sum/')
+
 
 from main import main
 from util.TwoDGraph import TwoDGraph
@@ -12,7 +14,7 @@ filepath = "data/2dfolder/onlyhulls/basichull.txt"
 outputfolder = "output/2dfolder/optimizesvg/"
 
 attempts = 1
-stepsize = 7000
+stepsize = 30000
 
 #How many randomization of one file do you want?
 tries = 1
