@@ -51,7 +51,7 @@ def showGraph(Graph: TwoDGraph, fullplot):
     #write index to make sure no swapping around happens
     for idx in range(Graph.vertices.shape[1]):
         x, y = Graph.vertices[0, idx], Graph.vertices[1, idx]
-        fullplot.text(x, y, str(idx), fontsize=9, color="blue")
+        fullplot.text(x, y, str(idx), fontsize=3, color="blue")
 
 
     faces : tuple[int,int,int] = Graph.faces 
@@ -63,15 +63,15 @@ def showGraph(Graph: TwoDGraph, fullplot):
         if(area >= 0):
             t = Polygon([reali,realj,realk], color = "green")
             fullplot.add_patch(t)
-            fullplot.plot([reali[0],realj[0]], [reali[1],realj[1]], color = "black")
-            fullplot.plot([realj[0],realk[0]], [realj[1],realk[1]], color = "black")
-            fullplot.plot([reali[0],realk[0]], [reali[1],realk[1]], color = "black")
+            fullplot.plot([reali[0],realj[0]], [reali[1],realj[1]], color = "black", lw = 0.01)
+            fullplot.plot([realj[0],realk[0]], [realj[1],realk[1]], color = "black", lw = 0.01)
+            fullplot.plot([reali[0],realk[0]], [reali[1],realk[1]], color = "black", lw = 0.01)
         else:
             t = Polygon([reali,realj,realk], color = "red")
             fullplot.add_patch(t)
-            fullplot.plot([reali[0],realj[0]], [reali[1],realj[1]], color = "black")
-            fullplot.plot([realj[0],realk[0]], [realj[1],realk[1]], color = "black")
-            fullplot.plot([reali[0],realk[0]], [reali[1],realk[1]], color = "black")
+            fullplot.plot([reali[0],realj[0]], [reali[1],realj[1]], color = "black", lw = 0.01)
+            fullplot.plot([realj[0],realk[0]], [realj[1],realk[1]], color = "black", lw = 0.01)
+            fullplot.plot([reali[0],realk[0]], [reali[1],realk[1]], color = "black", lw = 0.01)
 
     fullplot.axis("equal")
 
@@ -159,6 +159,8 @@ def newreconstructfromedgelengths(faces, edgelengths, dimensions = 2):
     # Output: New Graph with those edgelengths
 
     '''
+    print(faces)
+    print(edgelengths)
     facequeue = copy.deepcopy(faces)
     # we keep track of the vertices we have already determined#
     vertextracker = []
@@ -266,7 +268,7 @@ def visualizecircles(vertices, radii, subplot):
     '''Draw the circle with given radius at the position of the vertex of the same index
     '''
     for i in range(radii.shape[0]):
-        circle = plt.Circle(vertices[:,i], radii[i]) # type: ignore
+        circle = plt.Circle(vertices[:,i], radii[i], ec = "black", lw = 0.00001) # type: ignore
         subplot.add_patch(circle)
 
     subplot.axis('equal')

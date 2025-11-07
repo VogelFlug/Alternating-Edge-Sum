@@ -1,7 +1,6 @@
 #Imports
 import numpy as np
 import torch
-import torchviz
 from matplotlib import pyplot as plt
 import sys
 from io import StringIO
@@ -10,6 +9,10 @@ from io import StringIO
 from util.TwoDGraph import TwoDGraph
 import util.Graphutil as gutil
 import util.optimizationenergies as optimizers
+
+#for testing purposes
+import torchviz
+import time
 
 
 
@@ -191,7 +194,7 @@ def optimizeviasvg(Graph: TwoDGraph, loops: int, learnrate = 0.01):
     edgenr = edges.shape[0]
     iv = np.array(gutil.ivfromscratch(vertexnr, Graph.edgecounter), dtype=int)
     nf = len(Graph.faces)
-    Faces = torch.tensor(Graph.faces)
+    Faces = torch.tensor(Graph.faces).flatten()
 
     # To produce some fun graphs to check out later
     energies = []
@@ -218,8 +221,11 @@ def optimizeviasvg(Graph: TwoDGraph, loops: int, learnrate = 0.01):
     fullcycfe = faceedges[:,[2,0,1]]
 
     optimalangles = torch.zeros(iv.shape[0]) + 2*torch.pi
+    # Idk if this actually saves on computing time but eh:
+    zeros = torch.zeros(vertexnr)
 
-
+    print("start")
+    timer = time.time()
     for i in range(loops):
         # energy in this case is just how close we are to orthogonality:
         energy = torch.linalg.norm(N @ edgetensor) ** 2
@@ -228,6 +234,7 @@ def optimizeviasvg(Graph: TwoDGraph, loops: int, learnrate = 0.01):
         # Get the energy representing how close we are to all innervertices having an anglesum of 360 degrees.
         # Each face [i,j,k] has 3 angles that need calculating, in the first column we calculate the angle at i, in the second column the angle at j and in the third the angle at k.
         # Thus each c array is built like [jk, ik, ij] (i.e. holding the edgelength of the opposite edge) and a and b are shifted the represent the other two edges
+
         c = edgetensor[faceedges]
         b = edgetensor[cyclefe]
         a = edgetensor[fullcycfe]
@@ -236,7 +243,7 @@ def optimizeviasvg(Graph: TwoDGraph, loops: int, learnrate = 0.01):
         angles = torch.arccos((torch.square(b) + torch.square(a) - torch.square(c)) / 2 / b / a)
         anglesums = torch.zeros((nf))
         # Check whether the anglesum around all inner vertices is 2pi
-        anglesums.scatter_add_(0, Faces.flatten(), angles.flatten())
+        anglesums.scatter_add_(0, Faces, angles.flatten())
         anglenergy = 0.0001 * torch.linalg.norm(optimalangles - anglesums[iv])
         constraintenergies[0].append(anglenergy.item())
 
@@ -244,7 +251,7 @@ def optimizeviasvg(Graph: TwoDGraph, loops: int, learnrate = 0.01):
         # Punish negative radii (or at least the "simulated" radii) via the Pseudo inverse. The Pseudo inverse multiplied with the Edgelength gives us a set of "fake radii", 
         # we check if forbidding these from being negative prevents negative radii and thus nonense graphs
         pseu_rad = pseu_A @ edgetensor
-        pseu_neg = torch.min(torch.stack((pseu_rad, torch.zeros(vertexnr))), dim = 0).values
+        pseu_neg = torch.min(torch.stack((pseu_rad, zeros)), dim = 0).values
         radergy = torch.linalg.norm(pseu_neg)
         constraintenergies[1].append(radergy.item())
 
@@ -261,6 +268,8 @@ def optimizeviasvg(Graph: TwoDGraph, loops: int, learnrate = 0.01):
         # Reset Gradient
         edgetensor.grad.zero_() # type: ignore
     
+    print(time.time() - timer)
+
     edgelengths = edgetensor.detach().numpy()
     # now we make the edgematrix that i've used for the last funcion cause it's easier for implementation (i think)
     edgematrix = np.zeros((vertexnr, vertexnr))
@@ -334,5 +343,4 @@ def main(Graph: TwoDGraph, outputpath: str, attempts = 1, stepsize = 2000):
 
 
 
-    
     plt.savefig(outputpath + "optimizeviasvg.pdf")
