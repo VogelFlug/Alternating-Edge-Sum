@@ -225,7 +225,6 @@ def optimizeviasvg(Graph: TwoDGraph, loops: int, learnrate = 0.01):
     zeros = torch.zeros(vertexnr)
 
     print("start")
-    timer = time.time()
     for i in range(loops):
         # energy in this case is just how close we are to orthogonality:
         energy = torch.linalg.norm(N @ edgetensor) ** 2
@@ -267,8 +266,7 @@ def optimizeviasvg(Graph: TwoDGraph, loops: int, learnrate = 0.01):
 
         # Reset Gradient
         edgetensor.grad.zero_() # type: ignore
-    
-    print(time.time() - timer)
+
 
     edgelengths = edgetensor.detach().numpy()
     # now we make the edgematrix that i've used for the last funcion cause it's easier for implementation (i think)
