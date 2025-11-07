@@ -14,7 +14,7 @@ filepath = "data/2dfolder/onlyhulls/basichull.txt"
 outputfolder = "output/2dfolder/"
 
 attempts = 1
-stepsize = 10
+stepsize = 1000
 
 #How many randomization of one file do you want?
 tries = 1

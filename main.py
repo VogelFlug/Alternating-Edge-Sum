@@ -250,7 +250,7 @@ def optimizeviasvg(Graph: TwoDGraph, loops: int, learnrate = 0.01):
         # Punish negative radii (or at least the "simulated" radii) via the Pseudo inverse. The Pseudo inverse multiplied with the Edgelength gives us a set of "fake radii", 
         # we check if forbidding these from being negative prevents negative radii and thus nonense graphs
         pseu_rad = pseu_A @ edgetensor
-        pseu_neg = torch.min(torch.stack((pseu_rad, zeros)), dim = 0).values
+        pseu_neg = torch.minimum(pseu_rad, zeros)
         radergy = torch.linalg.norm(pseu_neg)
         constraintenergies[1].append(radergy.item())
 
@@ -266,7 +266,6 @@ def optimizeviasvg(Graph: TwoDGraph, loops: int, learnrate = 0.01):
 
         # Reset Gradient
         edgetensor.grad.zero_() # type: ignore
-
 
     edgelengths = edgetensor.detach().numpy()
     # now we make the edgematrix that i've used for the last funcion cause it's easier for implementation (i think)
