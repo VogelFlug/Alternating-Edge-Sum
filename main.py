@@ -243,7 +243,7 @@ def optimizeviasvg(Graph: TwoDGraph, loops: int, learnrate = 0.01):
         anglesums = torch.zeros((nf))
         # Check whether the anglesum around all inner vertices is 2pi
         anglesums.scatter_add_(0, Faces, angles.flatten())
-        anglenergy = 0.0001 * torch.linalg.norm(optimalangles - anglesums[iv])
+        anglenergy = 0.00002 * torch.linalg.norm(optimalangles - anglesums[iv])
         constraintenergies[0].append(anglenergy.item())
 
 
@@ -254,7 +254,7 @@ def optimizeviasvg(Graph: TwoDGraph, loops: int, learnrate = 0.01):
         radergy = torch.linalg.norm(pseu_neg)
         constraintenergies[1].append(radergy.item())
 
-        fullenergy = energy + anglenergy + radergy
+        fullenergy = energy + anglenergy# + radergy
 
     
         fullenergy.backward()
@@ -330,6 +330,7 @@ def main(Graph: TwoDGraph, outputpath: str, attempts = 1, stepsize = 2000):
         axs[2*i-1,1].set_title("AES energy over optimization",fontsize = 7, y = -0.25)
         axs[2*i-1,1].plot(energies)
         axs[2*i-1,1].text(1.1,0.5, " Final AES\n  energy:\n     " + str(format(energies[-1], ".8f")), transform=axs[2*i-1,1].transAxes,  rotation = 0, va = "center", ha="center", fontsize=7)
+        print( constraintenergies[0][-1],  constraintenergies[0][-2])
 
         # For the constraint energies, we assume we always implement two constraintenergies. If its less, the graphs remain empty, if its more...TODO
         axs[2*i,0].set_title("First Constraint Energy",fontsize = 7, y = -0.25)

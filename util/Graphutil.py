@@ -44,6 +44,18 @@ def ivfromscratch(vertexnumber, edgecounter):
     ov = getoutervertices(oe)
     return getinnervertices(vertexnumber, ov)
 
+def fixorientation(Graph: TwoDGraph):
+    '''Given a Graph, make sure that all the faces in it are correctly oriented.
+    We do this by getting the determinante for all faces and just doing a little switcheroo where it's negative'''
+    facearray = np.asarray(Graph.faces)
+    faceverti = Graph.vertices[:,facearray]
+    facespans = np.stack((faceverti[:,:,1] - faceverti[:,:,0], faceverti[:,:,2] -  faceverti[:,:,0])).T
+    areas = np.linalg.det(facespans)
+    faceswitches = np.where(areas<0)
+    facearray[faceswitches,0], facearray[faceswitches,1] = facearray[faceswitches,1], facearray[faceswitches,0]
+    Graph.faces = tuple(map(tuple, facearray)) #type: ignore
+    return
+
 
 #This plots a graph in the provided plot
 def showGraph(Graph: TwoDGraph, fullplot):
@@ -51,7 +63,7 @@ def showGraph(Graph: TwoDGraph, fullplot):
     #write index to make sure no swapping around happens
     for idx in range(Graph.vertices.shape[1]):
         x, y = Graph.vertices[0, idx], Graph.vertices[1, idx]
-        fullplot.text(x, y, str(idx), fontsize=3, color="blue")
+        fullplot.text(x, y, str(idx), fontsize=1, color="blue")
 
 
     faces : tuple[int,int,int] = Graph.faces 
@@ -319,7 +331,7 @@ def getedgefacelist(faces: tuple[int,int,int], edges: list):
 
 
 '''for testing purposes'''
-# filepath = "data/2dfolder/fulldata/basicexample.txt"
+# filepath = "data/2dfolder/fulldata/megabasic.txt"
 # # #edges = np.array([[0,1,1,0, 0.707106781186],[1, 0, 0, 1, 0.707106781186],[1,0,0,1, 0.707106781186],[0,1,1,0, 0.707106781186],[0.707106781186,0.707106781186,0.707106781186,0.707106781186,0]])
 
 # data = ""
@@ -331,6 +343,8 @@ def getedgefacelist(faces: tuple[int,int,int], edges: list):
 # edgelengths = np.zeros((Graph.vertices.shape[1],Graph.vertices.shape[1]))
 # for i,j in edges:
 #     edgelengths[i,j] = edgelengths[j,i] = np.linalg.norm(Graph.vertices[:,i] - Graph.vertices[:,j])
+
+# print(fixorientation(Graph))
 
 # print(getalledges(Graph.edgecounter))
 
