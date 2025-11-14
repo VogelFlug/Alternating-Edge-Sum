@@ -13,8 +13,8 @@ from scipy.spatial import Delaunay
 filepath = "data/2dfolder/onlyhulls/basichull.txt"
 outputfolder = "output/2dfolder/optimizesvg/"
 
-attempts = 3
-stepsize = 20000
+attempts = 1
+stepsize = 300000
 
 #How many randomization of one file do you want?
 tries = 1

@@ -228,12 +228,12 @@ def optimizeviasvg(Graph: TwoDGraph, loops: int, learnrate = 0.01):
     print("start")
     for i in range(loops):
         #playing around a bit with the factors
+        # if(edgetensor.isnan()[0] == True):
+        #     print(i)
         if(i == 100):
-            anglefactor = 0.05
-        elif(i == 1000):
-            anglefactor = 0.005
-        elif(i == 20000):
-            anglefactor = 0.0025
+            anglefactor = 0.01
+        elif(i % 4000 == 0):
+            learnrate *= 19/20
 
         # energy in this case is just how close we are to orthogonality:
         energy = torch.linalg.norm(N @ edgetensor) ** 2
@@ -324,7 +324,7 @@ def main(Graph: TwoDGraph, outputpath: str, attempts = 1, stepsize = 2000):
     axs[0,1].text(1.1,0.5, "    AES energy\n  for Tutte: \n     " + str(format(optimizers.SnapshotAES(TutteGraph),".8f")), transform=axs[0,1].transAxes,  rotation = 0, va = "center", ha="center", fontsize=7)
     
     for i in range(1, 1 + attempts):
-        AESgraph, energies, radii, constraintenergies = optimizeviasvg(Graph, i * stepsize, learnrate = 0.01)
+        AESgraph, energies, radii, constraintenergies = optimizeviasvg(Graph, i * stepsize, learnrate = 0.0115)
         print(radii)
 
         # axs[i,0].set_title("Soft conditions over optimization",fontsize = 7, y = -0.25)
