@@ -15,7 +15,7 @@ filepath = "data/2dfolder/onlyhulls/basichull.txt"
 outputfolder = "output/2dfolder/optimizesvg/"
 
 attempts = 1
-stepsize = 800000
+stepsize = 8000
 
 #number of random graphs you wanna generate this way
 tries = 1
@@ -43,9 +43,9 @@ def creategraphfromhull(hull: np.ndarray, nrinsides: int):
     np.random.seed(shuffleseed)
     neworder = np.arange(nrinsides)
     np.random.shuffle(neworder) # new order of the vertices
-
     fullvertices = np.concatenate((hull, realinnervertices[neworder,:]), axis = 0)
-    return TwoDGraph(vertices=fullvertices.T, faces=tri.simplices), shuffleseed
+
+    return TwoDGraph(vertices=fullvertices.T, faces=tri.simplices.tolist()), shuffleseed
 
 
 if __name__ == '__main__':
@@ -61,10 +61,10 @@ if __name__ == '__main__':
         nrinsides = int(2 + 10*np.random.rand())
 
         randomized_graph, shuffleseed = creategraphfromhull(vertices, nrinsides)
-        real_graph = fixorientation(randomized_graph)
+        #real_graph = fixorientation(randomized_graph)
 
         #for naming convention, I will use the state of the random numpy generator that generates our graph
-        main(randomized_graph, "output/2dfolder/optimizesvg/"+ "basichull" + "_" + str(seed) + "_" + str(shuffleseed) + "2", attempts, stepsize)
+        main(randomized_graph, "output/2dfolder/optimizesvg/"+ "basichull" + "_" + str(seed) + "_" + str(shuffleseed), attempts, stepsize)
 
 
 
