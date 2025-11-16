@@ -223,7 +223,10 @@ def optimizeviasvg(Graph: TwoDGraph, loops: int, learnrate = 0.01):
     optimalangles = torch.zeros(iv.shape[0]) + 2*torch.pi
     # Idk if this actually saves on computing time but eh:
     zeros = torch.zeros(vertexnr)
-    anglefactor = 0.000005
+    anglefactor = 0.00000
+    constraintenergies[0].append(1)
+    learnratechanger = 1+ ( 14.7 / loops)
+    print(learnratechanger)
 
     print("start")
     for i in range(loops):
@@ -232,8 +235,6 @@ def optimizeviasvg(Graph: TwoDGraph, loops: int, learnrate = 0.01):
         #     print(i)
         if(i == 100):
             anglefactor = 0.01
-        elif(i % 4000 == 0):
-            learnrate *= 19/20
 
         # energy in this case is just how close we are to orthogonality:
         energy = torch.linalg.norm(N @ edgetensor) ** 2
@@ -255,6 +256,9 @@ def optimizeviasvg(Graph: TwoDGraph, loops: int, learnrate = 0.01):
         anglenergy = anglefactor * torch.linalg.norm(optimalangles - anglesums[iv])
         constraintenergies[0].append(anglenergy.item())
 
+        if(i > 2000 and constraintenergies[0][-1] > constraintenergies[0][-2]):
+            learnrate /= learnratechanger
+
 
         # Punish negative radii (or at least the "simulated" radii) via the Pseudo inverse. The Pseudo inverse multiplied with the Edgelength gives us a set of "fake radii", 
         # we check if forbidding these from being negative prevents negative radii and thus nonense graphs
@@ -263,7 +267,7 @@ def optimizeviasvg(Graph: TwoDGraph, loops: int, learnrate = 0.01):
         radergy = torch.linalg.norm(pseu_neg)
         constraintenergies[1].append(radergy.item())
 
-        fullenergy = energy + anglenergy# + radergy
+        fullenergy = energy + anglenergy + radergy
 
     
         fullenergy.backward()
@@ -286,8 +290,6 @@ def optimizeviasvg(Graph: TwoDGraph, loops: int, learnrate = 0.01):
     newGraph = gutil.newreconstructfromedgelengths(list(Graph.faces), edgematrix)
     radii = gutil.spherepacker(Graph, edges, edgematrix)
     return newGraph, np.array(energies), radii, constraintenergies
-
-
 
 
 
@@ -324,7 +326,7 @@ def main(Graph: TwoDGraph, outputpath: str, attempts = 1, stepsize = 2000):
     axs[0,1].text(1.1,0.5, "    AES energy\n  for Tutte: \n     " + str(format(optimizers.SnapshotAES(TutteGraph),".8f")), transform=axs[0,1].transAxes,  rotation = 0, va = "center", ha="center", fontsize=7)
     
     for i in range(1, 1 + attempts):
-        AESgraph, energies, radii, constraintenergies = optimizeviasvg(Graph, i * stepsize, learnrate = 0.0115)
+        AESgraph, energies, radii, constraintenergies = optimizeviasvg(Graph, i * stepsize, learnrate = 0.048)
         print(radii)
 
         # axs[i,0].set_title("Soft conditions over optimization",fontsize = 7, y = -0.25)
@@ -343,7 +345,7 @@ def main(Graph: TwoDGraph, outputpath: str, attempts = 1, stepsize = 2000):
 
         # For the constraint energies, we assume we always implement two constraintenergies. If its less, the graphs remain empty, if its more...TODO
         axs[2*i,0].set_title("First Constraint Energy",fontsize = 7, y = -0.25)
-        axs[2*i,0].plot(constraintenergies[0])
+        axs[2*i,0].plot(constraintenergies[0][1:])
         axs[2*i,1].set_title("Second Constraint Energy",fontsize = 7, y = -0.25)
         axs[2*i,1].plot(constraintenergies[1])
         axs[2*i,1].text(1.1,0.5, " Final Total\n  energy:\n     " + str(format(energies[-1] + constraintenergies[0][-1], ".8f")), transform=axs[2*i,1].transAxes,  rotation = 0, va = "center", ha="center", fontsize=7)

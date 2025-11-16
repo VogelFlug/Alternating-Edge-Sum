@@ -14,7 +14,7 @@ filepath = "data/2dfolder/onlyhulls/basichull.txt"
 outputfolder = "output/2dfolder/optimizesvg/"
 
 attempts = 1
-stepsize = 300000
+stepsize = 800000
 
 #How many randomization of one file do you want?
 tries = 1
@@ -45,9 +45,9 @@ if __name__ == '__main__':
     #get hull vertices, should have format x1 y1\n x2 y2 etc.
     for i in range(tries):
         vertices = np.loadtxt(filepath, delimiter = " ")
-        seed = 163 #int(200 * np.random.rand())
+        seed = 154#int(200 * np.random.rand())
         np.random.seed(seed)
-        nrinsides = int(2 + 60*np.random.rand())
+        nrinsides = int(2 + 100*np.random.rand())
 
         randomized_graph = creategraphfromhull(vertices, nrinsides)
         main(randomized_graph, outputfolder + "basichull" + str(seed) + "_" + str(nrinsides), attempts=attempts, stepsize=stepsize)
