@@ -10,7 +10,9 @@ from util.TwoDGraph import TwoDGraph
 from scipy.spatial import Delaunay
 
 attempts = 1
-stepsize = 2000
+stepsize = 100
+
+outputfolder = "output/2dfolder/testdata1811/"
 
 def creategraph(vertexnumber):
     #Step one: create random number of vertices on the inside, done via dirichlet distribution (Idk either) and barycentric coordinates of the hull
@@ -24,18 +26,18 @@ def creategraph(vertexnumber):
 
     #Step two: create the graph based of these vertices with Delaunay
     tri = Delaunay(newvertices)
-    return TwoDGraph(vertices=newvertices.T, faces=tri.simplices)
+    return TwoDGraph(vertices=newvertices.T, faces=tri.simplices.tolist())
 
 
 if __name__ == '__main__':
     #we first randomize the state. This is ironically so we can revisit graphs later on by reusing the seed because the get_state function is giving me an aneurysm
-    seed = int(200 * np.random.rand())
+    seed = 155#int(200 * np.random.rand())
     np.random.seed(seed)
 
-    vertexnumber = int(3 + 10*np.random.rand())
+    vertexnumber = int(3 + 100*np.random.rand())
     print(vertexnumber)
 
     randomized_graph = creategraph(vertexnumber)
 
     #for naming convention, I will use the state of the random numpy generator that generates our graph
-    main(randomized_graph, "output/2dfolder/randomized/Graph_of_seed_" + str(seed))
+    main(randomized_graph, outputfolder + "rand_" + str(seed), attempts=attempts, stepsize=stepsize)

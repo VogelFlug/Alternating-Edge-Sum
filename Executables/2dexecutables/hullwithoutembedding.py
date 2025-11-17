@@ -15,7 +15,7 @@ filepath = "data/2dfolder/onlyhulls/basichull.txt"
 outputfolder = "output/2dfolder/optimizesvg/"
 
 attempts = 1
-stepsize = 8000
+stepsize = 400000
 
 #number of random graphs you wanna generate this way
 tries = 1
@@ -56,15 +56,15 @@ if __name__ == '__main__':
     #get hull vertices, should have format x1 y1\n x2 y2 etc.
     vertices = np.loadtxt(filepath, delimiter = " ")
     for i in range (tries):
-        seed = 26#int(200 * np.random.rand())
+        seed = 68#int(200 * np.random.rand())
         np.random.seed(seed)
-        nrinsides = int(2 + 10*np.random.rand())
+        nrinsides = int(2 + 200*np.random.rand())
 
         randomized_graph, shuffleseed = creategraphfromhull(vertices, nrinsides)
         #real_graph = fixorientation(randomized_graph)
 
         #for naming convention, I will use the state of the random numpy generator that generates our graph
-        main(randomized_graph, "output/2dfolder/optimizesvg/"+ "basichull" + "_" + str(seed) + "_" + str(shuffleseed), attempts, stepsize)
+        main(randomized_graph, "output/2dfolder/optimizesvg/"+ "basichull" + "_" + str(seed) + "_" + str(shuffleseed) + "_" + str(nrinsides), attempts, stepsize)
 
 
 

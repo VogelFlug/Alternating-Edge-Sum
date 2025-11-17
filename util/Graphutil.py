@@ -63,7 +63,7 @@ def showGraph(Graph: TwoDGraph, fullplot):
     #write index to make sure no swapping around happens
     for idx in range(Graph.vertices.shape[1]):
         x, y = Graph.vertices[0, idx], Graph.vertices[1, idx]
-        fullplot.text(x, y, str(idx), fontsize=1, color="blue")
+        fullplot.text(x, y, str(idx), fontsize=3, color="blue")
 
 
     faces : tuple[int,int,int] = Graph.faces 
@@ -171,8 +171,6 @@ def newreconstructfromedgelengths(faces, edgelengths, dimensions = 2):
     # Output: New Graph with those edgelengths
 
     '''
-    print(faces)
-    print(edgelengths)
     facequeue = copy.deepcopy(faces)
     # we keep track of the vertices we have already determined#
     vertextracker = []
