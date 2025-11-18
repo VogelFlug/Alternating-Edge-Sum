@@ -59,7 +59,7 @@ def fixorientation(Graph: TwoDGraph):
 
 #This plots a graph in the provided plot
 def showGraph(Graph: TwoDGraph, fullplot):
-    fullplot.scatter(Graph.vertices[0,:], Graph.vertices[1,:], color = "red")
+    #fullplot.scatter(Graph.vertices[0,:], Graph.vertices[1,:], color = "red")
     #write index to make sure no swapping around happens
     for idx in range(Graph.vertices.shape[1]):
         x, y = Graph.vertices[0, idx], Graph.vertices[1, idx]
@@ -68,13 +68,16 @@ def showGraph(Graph: TwoDGraph, fullplot):
 
     faces : tuple[int,int,int] = Graph.faces 
     vertices = Graph.vertices
+    minarea = 1
     for [i,j,k] in faces: # type: ignore
         # Get determinant to check for valid orientation
         reali, realj, realk = vertices[:,i],vertices[:,j],vertices[:,k]
         area = np.linalg.det([realj-reali, realk-reali])
+        if(area < minarea):
+            minarea = area
         if(area >= 0):
-            t = Polygon([reali,realj,realk], color = "green")
-            fullplot.add_patch(t)
+            #t = Polygon([reali,realj,realk], color = "green")
+            #fullplot.add_patch(t)
             fullplot.plot([reali[0],realj[0]], [reali[1],realj[1]], color = "black", lw = 0.01)
             fullplot.plot([realj[0],realk[0]], [realj[1],realk[1]], color = "black", lw = 0.01)
             fullplot.plot([reali[0],realk[0]], [reali[1],realk[1]], color = "black", lw = 0.01)
@@ -84,7 +87,6 @@ def showGraph(Graph: TwoDGraph, fullplot):
             fullplot.plot([reali[0],realj[0]], [reali[1],realj[1]], color = "black", lw = 0.01)
             fullplot.plot([realj[0],realk[0]], [realj[1],realk[1]], color = "black", lw = 0.01)
             fullplot.plot([reali[0],realk[0]], [reali[1],realk[1]], color = "black", lw = 0.01)
-
     fullplot.axis("equal")
 
 #AESlist is a list where each row corresponds to one inner edge and its adjacent faces with format [i, l, j, k]
@@ -242,7 +244,6 @@ def newreconstructfromedgelengths(faces, edgelengths, dimensions = 2):
 
                     vertextracker.append(k)
 
-    
     newGraph = TwoDGraph(vertices=newvertices, faces=faces)
     return newGraph
 

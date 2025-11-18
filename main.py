@@ -223,19 +223,17 @@ def optimizeviasvg(Graph: TwoDGraph, loops: int, learnrate = 0.01):
     optimalangles = torch.zeros(iv.shape[0]) + 2*torch.pi
     # Idk if this actually saves on computing time but eh:
     zeros = torch.zeros(vertexnr)
-    anglefactor = 0
-    constraintenergies[0].append(1)
-    #learnratechanger = 1 + (0.041)
-    #print(learnratechanger)
+    anglefactor = 1
 
     print("start")
     for i in range(loops):
         #playing around a bit with the factors
         # if(edgetensor.isnan()[0] == True):
         #     print(i)
-        if(i == 25):
-            anglefactor = 0.01
-            learnrate *= 100000
+        # if(i == 25):
+        #     anglefactor = 1
+        #     learnrate *= 2500
+        
 
         # energy in this case is just how close we are to orthogonality:
         energy = torch.linalg.norm(N @ edgetensor) ** 2
@@ -250,7 +248,8 @@ def optimizeviasvg(Graph: TwoDGraph, loops: int, learnrate = 0.01):
         a = edgetensor[fullcycfe]
 
         # The angles are calculated via the law of consines
-        angles = torch.arccos((torch.square(b) + torch.square(a) - torch.square(c)) / 2 / b / a)
+        a_ = torch.clamp((torch.square(b) + torch.square(a) - torch.square(c)) / 2 / b / a,min=-1+1e-6, max = 1 - 1e-6)
+        angles = torch.arccos(a_)
         anglesums = torch.zeros((nf))
         # Check whether the anglesum around all inner vertices is 2pi
         anglesums.scatter_add_(0, Faces, angles.flatten())
@@ -269,15 +268,17 @@ def optimizeviasvg(Graph: TwoDGraph, loops: int, learnrate = 0.01):
         constraintenergies[1].append(radergy.item())
 
         fullenergy = energy + anglenergy + radergy
+        fullenergy /= vertexnr
 
     
         fullenergy.backward()
 
         with torch.no_grad():
+            #print(edgetensor.grad)
             edgetensor -= learnrate * edgetensor.grad # type: ignore
 
-        if(i >25 and constraintenergies[0][-1] >= constraintenergies[0][-2]):
-            learnrate/=1.00001
+        if(i >1 and constraintenergies[0][-1] >= constraintenergies[0][-2]):
+              learnrate/=1.00008
         torch.abs(edgetensor)
 
         # Reset Gradient
@@ -289,7 +290,6 @@ def optimizeviasvg(Graph: TwoDGraph, loops: int, learnrate = 0.01):
     for i in range(edgenr):
         edgematrix[edges[i,0], edges[i,1]] = edgematrix[edges[i,1], edges[i,0]] = edgelengths[i]
     
-
     newGraph = gutil.newreconstructfromedgelengths(list(Graph.faces), edgematrix)
     radii = gutil.spherepacker(Graph, edges, edgematrix)
     return newGraph, np.array(energies), radii, constraintenergies
@@ -329,27 +329,27 @@ def main(Graph: TwoDGraph, outputpath: str, attempts = 1, stepsize = 2000):
     axs[0,1].text(1.1,0.5, "    AES energy\n  for Tutte: \n     " + str(format(optimizers.SnapshotAES(TutteGraph),".8f")), transform=axs[0,1].transAxes,  rotation = 0, va = "center", ha="center", fontsize=7)
     
     for i in range(1, 1 + attempts):
-        AESgraph, energies, radii, constraintenergies = optimizeviasvg(Graph, i * stepsize, learnrate = 0.0000005)
-        print(radii)
+        AESgraph, energies, radii, constraintenergies = optimizeviasvg(Graph, i * stepsize, learnrate = 125)
+        #print(radii)
 
         # axs[i,0].set_title("Soft conditions over optimization",fontsize = 7, y = -0.25)
         # print(outeredenergies[-1])
 
         axs[2*i-1,0].text(1.1,0.5, " Final AES\n  energy:\n     " + str(format(energies[-1], ".8f")), transform=axs[2*i-1,1].transAxes,  rotation = 0, va = "center", ha="center", fontsize=7)
 
-        axs[2*i-1,0].set_title("AES minimized graph", fontsize = 7, y = -0.25)
+        axs[2*i-1,0].set_title("AES minimized graph", fontsize = 7)
         gutil.showGraph(AESgraph, axs[i,0])
         gutil.visualizecircles(AESgraph.vertices, radii, axs[i,0])
 
-        axs[2*i-1,1].set_title("AES energy over optimization",fontsize = 7, y = -0.25)
+        axs[2*i-1,1].set_title("AES energy over optimization",fontsize = 7)
         axs[2*i-1,1].plot(energies)
         axs[2*i-1,1].text(1.1,0.5, " Final AES\n  energy:\n     " + str(format(energies[-1], ".8f")), transform=axs[2*i-1,1].transAxes,  rotation = 0, va = "center", ha="center", fontsize=7)
         print( constraintenergies[0][-2],  constraintenergies[0][-1])
 
         # For the constraint energies, we assume we always implement two constraintenergies. If its less, the graphs remain empty, if its more...TODO
-        axs[2*i,0].set_title("First Constraint Energy",fontsize = 7, y = -0.25)
-        axs[2*i,0].plot(constraintenergies[0][1:])
-        axs[2*i,1].set_title("Second Constraint Energy",fontsize = 7, y = -0.25)
+        axs[2*i,0].set_title("First Constraint Energy",fontsize = 7)
+        axs[2*i,0].plot(constraintenergies[0])
+        axs[2*i,1].set_title("Second Constraint Energy",fontsize = 7)
         axs[2*i,1].plot(constraintenergies[1])
         axs[2*i,1].text(1.1,0.5, " Final Total\n  energy:\n     " + str(format(energies[-1] + constraintenergies[0][-1], ".8f")), transform=axs[2*i,1].transAxes,  rotation = 0, va = "center", ha="center", fontsize=7)
 

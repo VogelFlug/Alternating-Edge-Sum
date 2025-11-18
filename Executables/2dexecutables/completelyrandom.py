@@ -3,14 +3,14 @@
 import numpy as np
 import sys
 sys.path.insert(0, 'C:/Users/ich/Desktop/Uni/Alternating-Edge-Sum')
-
+sys.path.insert(0, 'C:/Users/daveb/OneDrive/Desktop/Uni/Alternating-Edge-Sum/')
 
 from main import main
 from util.TwoDGraph import TwoDGraph
 from scipy.spatial import Delaunay
 
 attempts = 1
-stepsize = 100
+stepsize = 200000
 
 outputfolder = "output/2dfolder/testdata1811/"
 
@@ -34,10 +34,10 @@ if __name__ == '__main__':
     seed = 155#int(200 * np.random.rand())
     np.random.seed(seed)
 
-    vertexnumber = int(3 + 100*np.random.rand())
+    vertexnumber = int(3 + 200*np.random.rand())
     print(vertexnumber)
 
     randomized_graph = creategraph(vertexnumber)
 
     #for naming convention, I will use the state of the random numpy generator that generates our graph
-    main(randomized_graph, outputfolder + "rand_" + str(seed), attempts=attempts, stepsize=stepsize)
+    main(randomized_graph, outputfolder + "rand_" + str(seed) + "_" + str(vertexnumber), attempts=attempts, stepsize=stepsize)
