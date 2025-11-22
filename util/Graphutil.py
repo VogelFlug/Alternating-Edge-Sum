@@ -58,36 +58,29 @@ def fixorientation(Graph: TwoDGraph):
 
 
 #This plots a graph in the provided plot
-def showGraph(Graph: TwoDGraph, fullplot):
-    #fullplot.scatter(Graph.vertices[0,:], Graph.vertices[1,:], color = "red")
+def showGraph(Graph: TwoDGraph, subplot):
+    #im = subplot.scatter(Graph.vertices[0,:], Graph.vertices[1,:], color = "black", alpha = 1, cmap = "coolwarm")
     #write index to make sure no swapping around happens
     for idx in range(Graph.vertices.shape[1]):
         x, y = Graph.vertices[0, idx], Graph.vertices[1, idx]
-        fullplot.text(x, y, str(idx), fontsize=3, color="blue")
+        subplot.text(x, y, str(idx), fontsize=3, color="blue")
 
 
     faces : tuple[int,int,int] = Graph.faces 
     vertices = Graph.vertices
-    minarea = 1
-    for [i,j,k] in faces: # type: ignore
-        # Get determinant to check for valid orientation
-        reali, realj, realk = vertices[:,i],vertices[:,j],vertices[:,k]
-        area = np.linalg.det([realj-reali, realk-reali])
-        if(area < minarea):
-            minarea = area
-        if(area >= 0):
-            #t = Polygon([reali,realj,realk], color = "green")
-            #fullplot.add_patch(t)
-            fullplot.plot([reali[0],realj[0]], [reali[1],realj[1]], color = "black", lw = 0.01)
-            fullplot.plot([realj[0],realk[0]], [realj[1],realk[1]], color = "black", lw = 0.01)
-            fullplot.plot([reali[0],realk[0]], [reali[1],realk[1]], color = "black", lw = 0.01)
-        else:
-            t = Polygon([reali,realj,realk], color = "red")
-            fullplot.add_patch(t)
-            fullplot.plot([reali[0],realj[0]], [reali[1],realj[1]], color = "black", lw = 0.01)
-            fullplot.plot([realj[0],realk[0]], [realj[1],realk[1]], color = "black", lw = 0.01)
-            fullplot.plot([reali[0],realk[0]], [reali[1],realk[1]], color = "black", lw = 0.01)
-    fullplot.axis("equal")
+    #we vectorize this process via the determinante
+    facevertices = vertices[:,faces]
+    facereps = np.array(([facevertices[:,:,1] - facevertices[:,:,0],facevertices[:,:,2] - facevertices[:,:,0]]))
+    facereps = facereps.T
+    determinants = np.linalg.det(facereps)
+
+    #the determinants are our signed areas, we now map the colormap from [0,1] to [-maxarea, maxarea]
+    maxcol = np.max(np.abs(determinants))
+    im = subplot.tripcolor(*vertices, faces, determinants, vmin= -maxcol, vmax = maxcol, cmap ="RdYlGn")
+    subplot.triplot(*vertices, faces, color = "black")
+    plt.colorbar(mappable=im, ax=subplot)
+
+    subplot.axis("equal")
 
 #AESlist is a list where each row corresponds to one inner edge and its adjacent faces with format [i, l, j, k]
 def getAESList(Graph: TwoDGraph, inneredges: set[tuple[int,int]]) -> np.ndarray:
@@ -342,8 +335,7 @@ def getedgefacelist(faces: tuple[int,int,int], edges: list):
 # edgelengths = np.zeros((Graph.vertices.shape[1],Graph.vertices.shape[1]))
 # for i,j in edges:
 #     edgelengths[i,j] = edgelengths[j,i] = np.linalg.norm(Graph.vertices[:,i] - Graph.vertices[:,j])
-
-# print(fixorientation(Graph))
+# # print(fixorientation(Graph))
 
 # print(getalledges(Graph.edgecounter))
 
@@ -368,5 +360,5 @@ def getedgefacelist(faces: tuple[int,int,int], edges: list):
 
 
 # fig, axs = plt.subplots()
-# showGraph(newGraph, axs)
+# showGraph(Graph, axs)
 # plt.show()

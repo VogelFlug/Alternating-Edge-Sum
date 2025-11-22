@@ -14,7 +14,7 @@ filepath = "data/2dfolder/onlyhulls/basichull.txt"
 outputfolder = "output/2dfolder/testdata1811/"
 
 attempts = 1
-stepsize = 15000
+stepsize = 500000
 
 #How many randomization of one file do you want?
 tries = 1
@@ -44,7 +44,7 @@ if __name__ == '__main__':
 
     #get hull vertices, should have format x1 y1\n x2 y2 etc.
     for i in range(tries):
-        max_vertices = 20
+        max_vertices = 60
         vertices = np.loadtxt(filepath, delimiter = " ")
         seed = 163#int(200 * np.random.rand())
         np.random.seed(seed)

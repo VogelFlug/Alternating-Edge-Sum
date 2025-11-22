@@ -12,13 +12,13 @@ from util.Graphutil import fixorientation
 from scipy.spatial import Delaunay
 
 filepath = "data/2dfolder/onlyhulls/basichull.txt"
-outputfolder = "output/2dfolder/optimizesvg/"
+outputfolder = "output/2dfolder/testdatanoembedding/"
 
 attempts = 1
-stepsize = 400000
+stepsize = 1000000
 
 #number of random graphs you wanna generate this way
-tries = 1
+tries = 3
 
 def creategraphfromhull(hull: np.ndarray, nrinsides: int):
     #Step one: create random number of vertices on the inside, done via dirichlet distribution (Idk either) and barycentric coordinates of the hull
@@ -55,17 +55,22 @@ if __name__ == '__main__':
 
     #get hull vertices, should have format x1 y1\n x2 y2 etc.
     vertices = np.loadtxt(filepath, delimiter = " ")
+    maxvertices = 400
     for i in range (tries):
-        seed = 68#int(200 * np.random.rand())
+        seed = int(200 * np.random.rand())
         np.random.seed(seed)
-        nrinsides = int(2 + 200*np.random.rand())
+        nrinsides = int(2 + maxvertices*np.random.rand())
 
         randomized_graph, shuffleseed = creategraphfromhull(vertices, nrinsides)
         #real_graph = fixorientation(randomized_graph)
 
         #for naming convention, I will use the state of the random numpy generator that generates our graph
-        main(randomized_graph, "output/2dfolder/optimizesvg/"+ "basichull" + "_" + str(seed) + "_" + str(shuffleseed) + "_" + str(nrinsides), attempts, stepsize)
+        main(randomized_graph, outputfolder + "noembedding_" + str(seed) + "_" + str(shuffleseed) + "_" + str(nrinsides) + "_outta_" + str(maxvertices), attempts, stepsize)
 
+        #repeat with new shuffling
+        randomized_graph2, shuffleseed2 = creategraphfromhull(vertices, nrinsides)
+
+        main(randomized_graph2, outputfolder + "noembedding_" + str(seed) + "_" + str(shuffleseed2) + "_" + str(nrinsides) + "_outta_" + str(maxvertices), attempts, stepsize)
 
 
 
