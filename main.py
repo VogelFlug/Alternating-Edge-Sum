@@ -197,8 +197,9 @@ def optimizeviasvg(Graph: TwoDGraph, loops: int, learnrate = 0.01):
     Faces = torch.tensor(Graph.faces).flatten()
 
     # To produce some fun graphs to check out later
-    energies = []
+    aesenergies = []
     constraintenergies = [[],[]]
+    fullenergies = []
 
     # The connectivity matrix has one row per edge and that row is entirely 0 except for the two vertices that make that edge
     connectivity = torch.zeros((edgenr,vertexnr))
@@ -237,7 +238,7 @@ def optimizeviasvg(Graph: TwoDGraph, loops: int, learnrate = 0.01):
 
         # energy in this case is just how close we are to orthogonality:
         energy = torch.linalg.norm(N @ edgetensor) ** 2
-        energies.append(energy.item())
+        aesenergies.append(energy.item())
 
         # Get the energy representing how close we are to all innervertices having an anglesum of 360 degrees.
         # Each face [i,j,k] has 3 angles that need calculating, in the first column we calculate the angle at i, in the second column the angle at j and in the third the angle at k.
@@ -269,6 +270,7 @@ def optimizeviasvg(Graph: TwoDGraph, loops: int, learnrate = 0.01):
 
         fullenergy = energy + anglenergy + radergy
         fullenergy /= vertexnr
+        fullenergies.append(fullenergy.item())
 
     
         fullenergy.backward()
@@ -278,7 +280,7 @@ def optimizeviasvg(Graph: TwoDGraph, loops: int, learnrate = 0.01):
             edgetensor -= learnrate * edgetensor.grad # type: ignore
 
         if(i >1 and constraintenergies[0][-1] >= constraintenergies[0][-2]):
-              learnrate/=1.00008
+              learnrate/=1.0000125
         torch.abs(edgetensor)
 
         # Reset Gradient
@@ -292,7 +294,7 @@ def optimizeviasvg(Graph: TwoDGraph, loops: int, learnrate = 0.01):
     
     newGraph = gutil.newreconstructfromedgelengths(list(Graph.faces), edgematrix)
     radii = gutil.spherepacker(Graph, edges, edgematrix)
-    return newGraph, np.array(energies), radii, constraintenergies
+    return newGraph, aesenergies, radii, constraintenergies, fullenergies
 
 
 
@@ -323,36 +325,35 @@ def main(Graph: TwoDGraph, outputpath: str, attempts = 1, stepsize = 2000):
     gutil.showGraph(Graph, axs[0,0])
 
     # plot the Tutte Embedding of the original Graph and add the AES value to the side (only 6 decimal points cause otherwise it will get very messy)
-    axs[0,1].set_title("Tutte Embedding", fontsize = 7)
-    TutteGraph = gutil.standardtuttembedding(Graph)
-    gutil.showGraph(TutteGraph, axs[0,1])
-    axs[0,1].text(1.1,0.5, "    AES energy\n  for Tutte: \n     " + str(format(optimizers.SnapshotAES(TutteGraph),".8f")), transform=axs[0,1].transAxes,  rotation = 0, va = "center", ha="center", fontsize=7)
+    # axs[0,1].set_title("Tutte Embedding", fontsize = 7)
+    # TutteGraph = gutil.standardtuttembedding(Graph)
+    # gutil.showGraph(TutteGraph, axs[0,1])
+    # axs[0,1].text(1.1,0.5, "    AES energy\n  for Tutte: \n     " + str(format(optimizers.SnapshotAES(TutteGraph),".8f")), transform=axs[0,1].transAxes,  rotation = 0, va = "center", ha="center", fontsize=7)
     
-    for i in range(1, 1 + attempts):
-        AESgraph, energies, radii, constraintenergies = optimizeviasvg(Graph, i * stepsize, learnrate = 125)
-        #print(radii)
 
-        # axs[i,0].set_title("Soft conditions over optimization",fontsize = 7, y = -0.25)
-        # print(outeredenergies[-1])
-
-        axs[2*i-1,0].text(1.1,0.5, " Final AES\n  energy:\n     " + str(format(energies[-1], ".8f")), transform=axs[2*i-1,1].transAxes,  rotation = 0, va = "center", ha="center", fontsize=7)
-
-        axs[2*i-1,0].set_title("AES minimized graph", fontsize = 7)
-        gutil.showGraph(AESgraph, axs[i,0])
-        gutil.visualizecircles(AESgraph.vertices, radii, axs[i,0])
-
-        axs[2*i-1,1].set_title("AES energy over optimization",fontsize = 7)
-        axs[2*i-1,1].plot(energies)
-        axs[2*i-1,1].text(1.1,0.5, " Final AES\n  energy:\n     " + str(format(energies[-1], ".8f")), transform=axs[2*i-1,1].transAxes,  rotation = 0, va = "center", ha="center", fontsize=7)
-        print( constraintenergies[0][-2],  constraintenergies[0][-1])
-
-        # For the constraint energies, we assume we always implement two constraintenergies. If its less, the graphs remain empty, if its more...TODO
-        axs[2*i,0].set_title("First Constraint Energy",fontsize = 7)
-        axs[2*i,0].plot(constraintenergies[0])
-        axs[2*i,1].set_title("Second Constraint Energy",fontsize = 7)
-        axs[2*i,1].plot(constraintenergies[1])
-        axs[2*i,1].text(1.1,0.5, " Final Total\n  energy:\n     " + str(format(energies[-1] + constraintenergies[0][-1], ".8f")), transform=axs[2*i,1].transAxes,  rotation = 0, va = "center", ha="center", fontsize=7)
+    AESgraph, energies, radii, constraintenergies, fullenergies = optimizeviasvg(Graph, stepsize, learnrate = 45)
+    #print(radii)
 
 
-    plt.tight_layout(pad = 0, w_pad=-20, h_pad=1)
+    gutil.showGraph(AESgraph, axs[0,1])
+    gutil.visualizecircles(AESgraph.vertices, radii, axs[0,1])
+
+    # first plot the entire energy over the course of the optimization
+    axs[1,0].set_title("Normalized energy over optimization",fontsize = 7)
+    axs[1,0].plot(fullenergies)
+
+    axs[1,1].set_title("AES energy over optimization",fontsize = 7)
+    axs[1,1].plot(energies)
+    axs[1,1].text(1.105,0.5, " Final AES\n  energy:\n     " + str(format(energies[-1], ".8f")), transform=axs[1,1].transAxes,  rotation = 0, va = "center", ha="center", fontsize=7)
+    print( constraintenergies[0][-2],  constraintenergies[0][-1])
+
+    # For the constraint energies, we assume we always implement two constraintenergies. If its less, the graphs remain empty, if its more...TODO
+    axs[2,0].set_title("Angle sum punishment",fontsize = 7)
+    axs[2,0].plot(constraintenergies[0])
+    axs[2,1].set_title("Negative Radii punishment",fontsize = 7)
+    axs[2,1].plot(constraintenergies[1])
+    axs[2,1].text(1.105,0.5, " Final Total\n  energy:\n     " + str(format(energies[-1] + constraintenergies[0][-1], ".8f")), transform=axs[2,1].transAxes,  rotation = 0, va = "center", ha="center", fontsize=7)
+
+
+    plt.tight_layout(pad = 0.2)
     plt.savefig(outputpath + "optimizeviasvg.pdf")
