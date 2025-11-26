@@ -280,7 +280,7 @@ def optimizeviasvg(Graph: TwoDGraph, loops: int, learnrate = 0.01):
             edgetensor -= learnrate * edgetensor.grad # type: ignore
 
         if(i > 1 and constraintenergies[0][-1] >= constraintenergies[0][-2]):
-              learnrate/=1.00028
+              learnrate/=1.00022
         torch.abs(edgetensor)
 
         # Reset Gradient
@@ -321,7 +321,7 @@ def main(Graph: TwoDGraph, outputpath: str, attempts = 1, stepsize = 2000):
     fig, axs = plt.subplots(1 + 2*attempts,2)
 
     #plot input graph for reference
-    axs[0,0].set_title("Original Graph", fontsize = 7)
+    axs[0,0].set_title("Initial Graph", fontsize = 7)
     gutil.showGraph(Graph, axs[0,0])
 
     # plot the Tutte Embedding of the original Graph and add the AES value to the side (only 6 decimal points cause otherwise it will get very messy)
@@ -331,30 +331,32 @@ def main(Graph: TwoDGraph, outputpath: str, attempts = 1, stepsize = 2000):
     # axs[0,1].text(1.1,0.5, "    AES energy\n  for Tutte: \n     " + str(format(optimizers.SnapshotAES(TutteGraph),".8f")), transform=axs[0,1].transAxes,  rotation = 0, va = "center", ha="center", fontsize=7)
     
 
-    AESgraph, energies, radii, constraintenergies, fullenergies = optimizeviasvg(Graph, stepsize, learnrate = 30)
+    AESgraph, energies, radii, constraintenergies, fullenergies = optimizeviasvg(Graph, stepsize, learnrate = 20)
     #print(radii)
 
-
+    axs[0,1].set_title("Graph reconstruction from optimization")
     gutil.showGraph(AESgraph, axs[0,1])
     gutil.visualizecircles(AESgraph.vertices, radii, axs[0,1])
 
     # first plot the entire energy over the course of the optimization
     
-    axs[1,0].set_title("Negative Radii punishment",fontsize = 7)
-    axs[1,0].plot(constraintenergies[1])
+    axs[1,0].set_title("Negative Radii penalty",fontsize = 7)
+    axs[1,0].plot(constraintenergies[1], color = "red")
+    axs[1,0].text(0.8,0.8, " Final Radii\n  penalty:\n     " + str(format(constraintenergies[1][-1], ".8f")), transform=axs[1,0].transAxes,  rotation = 0, va = "center", ha="center", fontsize=7)
 
-    axs[1,1].set_title("AES energy over optimization",fontsize = 7)
-    axs[1,1].plot(energies)
-    axs[1,1].text(1.105,0.5, " Final AES\n  energy:\n     " + str(format(energies[-1], ".8f")), transform=axs[1,1].transAxes,  rotation = 0, va = "center", ha="center", fontsize=7)
+    axs[1,1].set_title("Sphere packing energy",fontsize = 7)
+    axs[1,1].plot(energies, color = "purple")
+    axs[1,1].text(0.8,0.8, " Final AES\n  energy:\n     " + str(format(energies[-1], ".8f")), transform=axs[1,1].transAxes,  rotation = 0, va = "center", ha="center", fontsize=7)
     print( constraintenergies[0][-2],  constraintenergies[0][-1])
 
     # For the constraint energies, we assume we always implement two constraintenergies. If its less, the graphs remain empty, if its more...TODO
-    axs[2,0].set_title("Angle sum punishment",fontsize = 7)
-    axs[2,0].plot(constraintenergies[0])
+    axs[2,0].set_title("Angle sum penalty",fontsize = 7)
+    axs[2,0].plot(constraintenergies[0], color = "green")
+    axs[2,0].text(0.8,0.8, " Final Angle sum\n  penalty:\n     " + str(format(constraintenergies[0][-1], ".8f")), transform=axs[2,0].transAxes,  rotation = 0, va = "center", ha="center", fontsize=7)
     
-    axs[2,1].set_title("Normalized energy over optimization",fontsize = 7)
+    axs[2,1].set_title("Normalized total energy",fontsize = 7)
     axs[2,1].plot(fullenergies)
-    axs[2,1].text(1.105,0.5, " Final Total\n  energy:\n     " + str(format(energies[-1] + constraintenergies[0][-1], ".8f")), transform=axs[2,1].transAxes,  rotation = 0, va = "center", ha="center", fontsize=7)
+    axs[2,1].text(0.8,0.8, " Final Total\n  energy:\n     " + str(format(fullenergies[-1], ".8f")), transform=axs[2,1].transAxes,  rotation = 0, va = "center", ha="center", fontsize=7)
 
 
     plt.tight_layout(pad = 0.2)

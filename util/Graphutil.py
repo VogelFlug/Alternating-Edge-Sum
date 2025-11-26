@@ -63,7 +63,7 @@ def showGraph(Graph: TwoDGraph, subplot):
     #write index to make sure no swapping around happens
     for idx in range(Graph.vertices.shape[1]):
         x, y = Graph.vertices[0, idx], Graph.vertices[1, idx]
-        subplot.text(x, y, str(idx), fontsize=3, color="blue")
+        subplot.text(x, y, str(idx), fontsize=2, color="white")
 
 
     faces : tuple[int,int,int] = Graph.faces 
@@ -77,7 +77,7 @@ def showGraph(Graph: TwoDGraph, subplot):
     #the determinants are our signed areas, we now map the colormap from [0,1] to [-maxarea, maxarea]
     maxcol = np.max(np.abs(determinants))
     im = subplot.tripcolor(*vertices, faces, determinants, vmin= -maxcol, vmax = maxcol, cmap ="RdYlGn")
-    subplot.triplot(*vertices, faces, color = "black")
+    subplot.triplot(*vertices, faces, color = "black", lw = 0.00001)
     plt.colorbar(mappable=im, ax=subplot)
 
     subplot.axis("equal")
@@ -272,7 +272,7 @@ def visualizecircles(vertices, radii, subplot):
     '''Draw the circle with given radius at the position of the vertex of the same index
     '''
     for i in range(radii.shape[0]):
-        circle = plt.Circle(vertices[:,i], radii[i], ec = "black", lw = 0.00001) # type: ignore
+        circle = plt.Circle(vertices[:,i], radii[i], ec = "black", lw = 0.00001, alpha = 0.8) # type: ignore
         subplot.add_patch(circle)
 
     subplot.axis('equal')
