@@ -237,7 +237,7 @@ def optimizeviasvg(Graph: TwoDGraph, loops: int, learnrate = 0.01):
         
 
         # energy in this case is just how close we are to orthogonality:
-        energy = torch.linalg.norm(N @ edgetensor) ** 2
+        energy = torch.linalg.norm(N @ edgetensor) 
         aesenergies.append(energy.item())
 
         # Get the energy representing how close we are to all innervertices having an anglesum of 360 degrees.
@@ -279,8 +279,8 @@ def optimizeviasvg(Graph: TwoDGraph, loops: int, learnrate = 0.01):
             #print(edgetensor.grad)
             edgetensor -= learnrate * edgetensor.grad # type: ignore
 
-        if(i >1 and constraintenergies[0][-1] >= constraintenergies[0][-2]):
-              learnrate/=1.0000125
+        if(i > 1 and constraintenergies[0][-1] >= constraintenergies[0][-2]):
+              learnrate/=1.00028
         torch.abs(edgetensor)
 
         # Reset Gradient
@@ -331,7 +331,7 @@ def main(Graph: TwoDGraph, outputpath: str, attempts = 1, stepsize = 2000):
     # axs[0,1].text(1.1,0.5, "    AES energy\n  for Tutte: \n     " + str(format(optimizers.SnapshotAES(TutteGraph),".8f")), transform=axs[0,1].transAxes,  rotation = 0, va = "center", ha="center", fontsize=7)
     
 
-    AESgraph, energies, radii, constraintenergies, fullenergies = optimizeviasvg(Graph, stepsize, learnrate = 45)
+    AESgraph, energies, radii, constraintenergies, fullenergies = optimizeviasvg(Graph, stepsize, learnrate = 30)
     #print(radii)
 
 
@@ -339,8 +339,9 @@ def main(Graph: TwoDGraph, outputpath: str, attempts = 1, stepsize = 2000):
     gutil.visualizecircles(AESgraph.vertices, radii, axs[0,1])
 
     # first plot the entire energy over the course of the optimization
-    axs[1,0].set_title("Normalized energy over optimization",fontsize = 7)
-    axs[1,0].plot(fullenergies)
+    
+    axs[1,0].set_title("Negative Radii punishment",fontsize = 7)
+    axs[1,0].plot(constraintenergies[1])
 
     axs[1,1].set_title("AES energy over optimization",fontsize = 7)
     axs[1,1].plot(energies)
@@ -350,8 +351,9 @@ def main(Graph: TwoDGraph, outputpath: str, attempts = 1, stepsize = 2000):
     # For the constraint energies, we assume we always implement two constraintenergies. If its less, the graphs remain empty, if its more...TODO
     axs[2,0].set_title("Angle sum punishment",fontsize = 7)
     axs[2,0].plot(constraintenergies[0])
-    axs[2,1].set_title("Negative Radii punishment",fontsize = 7)
-    axs[2,1].plot(constraintenergies[1])
+    
+    axs[2,1].set_title("Normalized energy over optimization",fontsize = 7)
+    axs[2,1].plot(fullenergies)
     axs[2,1].text(1.105,0.5, " Final Total\n  energy:\n     " + str(format(energies[-1] + constraintenergies[0][-1], ".8f")), transform=axs[2,1].transAxes,  rotation = 0, va = "center", ha="center", fontsize=7)
 
 
