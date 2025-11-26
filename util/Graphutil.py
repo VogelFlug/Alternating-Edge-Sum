@@ -63,7 +63,7 @@ def showGraph(Graph: TwoDGraph, subplot):
     #write index to make sure no swapping around happens
     for idx in range(Graph.vertices.shape[1]):
         x, y = Graph.vertices[0, idx], Graph.vertices[1, idx]
-        subplot.text(x, y, str(idx), fontsize=2, color="white")
+        subplot.text(x, y, str(idx), fontsize=2, color="black")
 
 
     faces : tuple[int,int,int] = Graph.faces 
