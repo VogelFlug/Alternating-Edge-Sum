@@ -15,10 +15,10 @@ filepath = "data/2dfolder/onlyhulls/basichull.txt"
 outputfolder = "output/2dfolder/testdatanoembedding/"
 
 attempts = 1
-stepsize = 1000000
+stepsize = 600000
 
 #number of random graphs you wanna generate this way
-tries = 3
+tries = 10
 
 def creategraphfromhull(hull: np.ndarray, nrinsides: int):
     #Step one: create random number of vertices on the inside, done via dirichlet distribution (Idk either) and barycentric coordinates of the hull
@@ -39,13 +39,11 @@ def creategraphfromhull(hull: np.ndarray, nrinsides: int):
     tri = Delaunay(fullvertices)
 
     #Step three: Shuffle the vertices on the inside to destroy the embedding. Then combine with hull to have all the vertices
-    shuffleseed = 107#int(200*np.random.rand()) # So we can reuse graphs with different shuffling
-    np.random.seed(shuffleseed)
     neworder = np.arange(nrinsides)
     np.random.shuffle(neworder) # new order of the vertices
     fullvertices = np.concatenate((hull, realinnervertices[neworder,:]), axis = 0)
 
-    return TwoDGraph(vertices=fullvertices.T, faces=tri.simplices.tolist()), shuffleseed
+    return TwoDGraph(vertices=fullvertices.T, faces=tri.simplices.tolist())
 
 
 if __name__ == '__main__':
@@ -55,22 +53,22 @@ if __name__ == '__main__':
 
     #get hull vertices, should have format x1 y1\n x2 y2 etc.
     vertices = np.loadtxt(filepath, delimiter = " ")
-    maxvertices = 400
+    maxvertices = 100
     for i in range (tries):
-        seed = int(200 * np.random.rand())
+        seed = int(1000 * np.random.rand())
         np.random.seed(seed)
-        nrinsides = int(2 + maxvertices*np.random.rand())
+        nrinsides = int(10 + maxvertices-100 + 90*np.random.rand())
 
-        randomized_graph, shuffleseed = creategraphfromhull(vertices, nrinsides)
+        randomized_graph = creategraphfromhull(vertices, nrinsides)
         #real_graph = fixorientation(randomized_graph)
 
         #for naming convention, I will use the state of the random numpy generator that generates our graph
-        main(randomized_graph, outputfolder + "noembedding_" + str(seed) + "_" + str(shuffleseed) + "_" + str(nrinsides) + "_outta_" + str(maxvertices), attempts, stepsize)
+        main(randomized_graph, outputfolder + "noembedding_" + str(seed) + "_" + str(nrinsides) + "_outta_" + str(maxvertices), attempts, stepsize)
 
-        #repeat with new shuffling
-        randomized_graph2, shuffleseed2 = creategraphfromhull(vertices, nrinsides)
+        # #repeat with new shuffling
+        # randomized_graph2, shuffleseed2 = creategraphfromhull(vertices, nrinsides)
 
-        main(randomized_graph2, outputfolder + "noembedding_" + str(seed) + "_" + str(shuffleseed2) + "_" + str(nrinsides) + "_outta_" + str(maxvertices), attempts, stepsize)
+        # main(randomized_graph2, outputfolder + "noembedding_" + str(seed) + "_" + str(shuffleseed2) + "_" + str(nrinsides) + "_outta_" + str(maxvertices), attempts, stepsize)
 
 
 
